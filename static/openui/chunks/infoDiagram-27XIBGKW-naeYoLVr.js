@@ -1,0 +1,2 @@
+import{_ as e,l as s,D as o,d as i}from"./mermaid.core-a7IuLF6e.js";import{p as d}from"./cynefin-OW5HDTMX-CamUxOHq.js";var p={parse:e(async r=>{const a=await d("info",r);s.debug(a)},"parse")},g={version:"11.17.2"},m=e(()=>g.version,"getVersion"),c={getVersion:m},v=e((r,a,n)=>{s.debug(`rendering info diagram
+`+r);const t=o(a);i(t,100,400,!0),t.append("g").append("text").attr("x",100).attr("y",40).attr("class","version").attr("font-size",32).style("text-anchor","middle").text(`v${n}`)},"draw"),f={draw:v},l={parser:p,db:c,renderer:f};export{l as diagram};

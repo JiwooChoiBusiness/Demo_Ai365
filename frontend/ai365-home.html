@@ -1,0 +1,1672 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ai365 Home Example</title>
+<style>
+  /* ═══ Ai365 목업과 동일한 디자인 토큰 (frontend/ai365-mockup.html 과 같은 값, 2026-10-20 DEV 프런트 정렬) ═══ */
+  /* ═══ Same design tokens as the Ai365 mockup (same values as frontend/ai365-mockup.html, aligned to the DEV frontend 2026-10-20) ═══ */
+  /* 글꼴(2026-10-28): Dev(src/app/styles/font.css)와 같은 Pretendard 를 CDN 대신 /static/fonts/pretendard 의 woff2 로 실제로 불러온다(local() 먼저).
+     파일이 400 · 600 · 700 뿐이라 500 은 400, 800 은 700 으로 그려진다.
+     Font (2026-10-28): the same Pretendard as Dev (src/app/styles/font.css), really loaded from the woff2 files under /static/fonts/pretendard
+     instead of the CDN (local() first). Only 400, 600 and 700 exist, so 500 renders as 400 and 800 as 700. */
+  @font-face{font-family:"Pretendard";font-style:normal;font-weight:400;font-display:swap;src:local("Pretendard Regular"),local("Pretendard-Regular"),url(/static/fonts/pretendard/Pretendard-Regular.woff2) format("woff2");}
+  @font-face{font-family:"Pretendard";font-style:normal;font-weight:600;font-display:swap;src:local("Pretendard SemiBold"),local("Pretendard-SemiBold"),url(/static/fonts/pretendard/Pretendard-SemiBold.woff2) format("woff2");}
+  @font-face{font-family:"Pretendard";font-style:normal;font-weight:700;font-display:swap;src:local("Pretendard Bold"),local("Pretendard-Bold"),url(/static/fonts/pretendard/Pretendard-Bold.woff2) format("woff2");}
+  :root{
+    --primary:#4450CE; --primary-hover:#3940BD; --primary-active:#1D008B; --primary-mid:#7186FF;
+    --primary-soft:#F2F6FF; --primary-softer:#FAFCFF; --primary-ring:#B9BDC8;
+    --ink:#21242C; --ink-2:#3E424B; --ink-3:#5D616A; --muted:#6C707A; --muted-2:#9FA3AD;
+    --border:#CDD1DC; --border-2:#DCE0EB; --sidebar-bg:#F6F8FD;
+    --danger:#CC2635; --success:#1BA672; --bubble:#F6F8FD; --orange:#F59E0B; --blue:#2563EB;
+    --soft-2:#E4EDFF; --soft-3:#E7EBF6; --table-head:#EFF2FA; --disabled-bg:#EFF2FA;
+    --shadow-pop:0 8px 16px rgba(21,19,82,.14), 0 0 2px rgba(21,19,82,.06);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{font-family:"Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Segoe UI",sans-serif;
+    color:var(--ink);background:#fff;overflow:hidden;}
+  button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;}
+  input,select,textarea{font:inherit;}
+  svg{display:block;flex-shrink:0;}
+  /* 포커스 = Dev 방식(키보드 포커스에만 옅은 브랜드 2px 링, 2026-10-28 계약 결정 4) / focus = the Dev way (a light brand 2px ring on keyboard focus only, contract decision 4) */
+  :is(button,select,[tabindex]):focus-visible{outline:none;box-shadow:0 0 0 2px rgba(68,80,206,.4);}
+
+  /* ── Header ── */
+  .header{height:56px;display:flex;align-items:center;padding:0 20px 0 16px;border-bottom:1px solid var(--border);background:#fff;position:relative;z-index:30;}
+  .brand{display:flex;align-items:center;gap:8px;margin-right:36px;}
+  .brand-name{font-size:19px;font-weight:800;color:#303A8C;letter-spacing:-0.2px;}
+  .tabs{display:flex;align-items:flex-end;gap:8px;height:56px;}
+  .tab{position:relative;padding:0 16px;height:56px;display:flex;align-items:center;font-size:15px;color:var(--ink-2);}
+  .tab::after{content:"";position:absolute;left:14px;right:14px;bottom:0;height:3px;border-radius:3px 3px 0 0;background:transparent;transition:background .15s;}
+  .tab:hover::after{background:var(--muted-2);}
+  .tab.selected{font-weight:700;color:var(--ink);}
+  .tab.selected::after{background:var(--primary);}
+  .header-right{margin-left:auto;display:flex;align-items:center;}
+  .avatar-btn{width:34px;height:34px;border-radius:50%;background:var(--soft-3);color:#5B66B8;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+
+  /* ── Layout / Sidebar ── */
+  .layout{display:flex;height:calc(100vh - 56px);}
+  .sidebar{width:280px;min-width:280px;background:var(--sidebar-bg);border-right:1px solid var(--border-2);display:flex;flex-direction:column;}
+  .layout.no-side .sidebar{display:none;}   /* Home 탭 = 사이드바 없는 전체 폭 대시보드 / Home tab = full-width dashboard without sidebar */
+  /* 임베드 모드(앱 .main의 iframe 안) — 자체 헤더를 숨기고 본문을 전고(全高)로.
+     앱의 헤더·사이드바가 바깥에서 이미 감싸므로 위젯 본문만 렌더한다. */
+  /* Embed mode (inside the app's .main iframe) — hide our own header and stretch the body
+     to full height. The app's header/sidebar already wrap us, so only the widget body renders. */
+  .embed .header{display:none;}
+  .embed .layout{height:100vh;}
+  .sidebar-top{display:flex;align-items:center;justify-content:space-between;padding:14px 14px 10px 16px;}
+  .icon-btn{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--muted);}
+  .sidebar-scroll{flex:1;overflow-y:auto;padding:4px 10px 12px;}
+  .sidebar-scroll::-webkit-scrollbar{width:4px;}
+  .sidebar-scroll::-webkit-scrollbar-thumb{background:#D9DCE6;border-radius:4px;}
+  .nav-item{width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;font-size:14px;color:var(--ink-2);position:relative;text-align:left;}
+  .nav-item:hover{background:var(--sidebar-bg);}
+  .nav-item .nav-icon{color:var(--ink-2);}
+  .nav-item.new-chat .nav-icon-circle{width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:flex;align-items:center;justify-content:center;}
+  .nav-item .chev{margin-left:auto;color:var(--muted);}
+  .sub-item{width:100%;display:block;text-align:left;padding:8px 10px 8px 40px;border-radius:9px;font-size:14px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .sub-item:hover{background:var(--sidebar-bg);}
+  .sidebar-divider{height:1px;background:var(--border-2);margin:10px 4px;}
+  .section-label{font-size:12px;color:var(--muted);padding:10px 10px 6px;}
+  .chat-item{width:100%;display:flex;align-items:center;padding:8px 6px 8px 10px;border-radius:9px;font-size:14px;color:var(--ink-2);text-align:left;}
+  .chat-item:hover{background:var(--sidebar-bg);}
+  .chat-title{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .sidebar-bottom{border-top:1px solid var(--border-2);padding:10px;}
+
+  /* ── Main / Views ── */
+  .main{flex:1;display:flex;flex-direction:column;min-width:0;background:#fff;}
+  .view{display:none;flex:1;flex-direction:column;min-height:0;}
+  .view.active{display:flex;}
+  .ws-ph{flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);}
+  .ws-ph-card{border:1.5px dashed var(--border);border-radius:16px;padding:34px 48px;text-align:center;font-size:14.5px;line-height:1.8;max-width:560px;}
+  .ws-ph-card b{color:var(--ink-2);}
+  .ws-ph-card .q{color:var(--primary);font-weight:700;}
+
+  /* ── 대시보드 프레임(2026-10-28 Dev 원본 정렬: home/pages/HomePage.tsx · GroupwareHeader.tsx · groupware.css) ──
+     위 60 막대(Dev 머리줄. 앱 안에서는 그 오른쪽 위에 앱의 언어 · 계정 묶음이 떠 있다) 아래가 스크롤 영역이다. 흰 바탕 · 좌우 24,
+     머리(제목 28/36 600 + 부제 16/22) 아래 24 띄고 위젯 격자(간격 16). 경로(브레드크럼)는 Dev 처럼 리소스 센터 진입에서만 60 막대
+     왼쪽에 보이고(GroupwarePage), 위 Groupware 탭 진입(= Dev /home)에서는 숨긴다.
+     ── dashboard frame (Dev original alignment 2026-10-28: home/pages/HomePage.tsx, GroupwareHeader.tsx, groupware.css) ──
+     Below a 60px top bar (the Dev header row; inside the app the app's language and account bundle floats at its top right) sits the
+     scroll area: white, 24 side padding, the header (a 28/36 600 title and a 16/22 subtitle), 24 below it, then the widget grid (16 gaps).
+     As in Dev the breadcrumb shows only for the Resource Center entry, at the left of the 60 bar (GroupwarePage), and hides for the top
+     Groupware tab entry (= Dev /home). */
+  .topbar{flex:none;height:60px;display:flex;align-items:center;padding:10px;background:#fff;}
+  .crumb{display:flex;align-items:center;gap:2px;min-width:250px;font-size:14px;line-height:20px;color:var(--ink-2);}
+  .crumb svg{width:16px;height:16px;}
+  .crumb .cb-back{display:flex;padding:6px;border-radius:4px;}
+  .crumb .cb-back svg{width:20px;height:20px;}
+  .crumb .cb-it{padding:6px;border-radius:8px;white-space:nowrap;}
+  .crumb .cb-it.cur{font-weight:600;}
+  body.entry-tab .crumb{display:none;}
+  .hero{flex:1;display:flex;flex-direction:column;padding:0 24px 24px;min-height:0;overflow-y:auto;background:#fff;}
+  .hero::-webkit-scrollbar{width:6px;} .hero::-webkit-scrollbar-thumb{background:#D9DCE6;border-radius:4px;}
+  .ph{flex:none;display:flex;align-items:center;gap:8px;margin-bottom:24px;}
+  .ph h1{font-size:28px;line-height:36px;font-weight:600;color:var(--ink-2);letter-spacing:0;}
+  .ph .sub{font-size:16px;line-height:22px;color:var(--muted);margin-top:4px;}
+  .ph .sp{flex:1;}
+  /* 배치 편집 = #EFF2FA 알약(32, 톱니 20 + 13/600 글, hover #E7EBF6). 위 탭 진입(= Dev /home)에서는 32 원 아이콘만. 누르면 홈이 그 자리에서 편집 상태(static/home_dash.js, 2026-11-17 4단계)
+     edit layout = an #EFF2FA pill (32; a 20 gear and 13/600 text; hover #E7EBF6); icon-only 32 circle on the top-tab entry (= Dev /home); a click turns the home itself into edit mode (static/home_dash.js, phase 4) */
+  .edit-btn{display:flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 12px;border-radius:9999px;background:var(--table-head);color:var(--ink-2);font-size:13px;font-weight:600;white-space:nowrap;flex-shrink:0;transition:background-color .15s,color .15s;}
+  .edit-btn:hover{background:var(--soft-3);}
+  .edit-btn svg{width:20px;height:20px;pointer-events:none;}
+  /* 에이전트 전환 탭 묶음(2026-09-04, 상단 'Groupware' 탭 진입만 = body.entry-tab): Dev GroupwareHeader 그대로 #EFF2FA 알약 바탕 · 안쪽 6 ·
+     간격 4, 버튼 32 · 좌우 12 · 14/600, 켜짐 #4450CE + 흰 글. 보안(body.sec-on) · 전자결재(body.eapp-on)는 본문을 바꾸고 위젯 · 설정 버튼을 숨긴다.
+     Agent switch group (2026-09-04, top 'Groupware' tab entry only = body.entry-tab): as in Dev GroupwareHeader, an #EFF2FA pill track with 6
+     padding and 4 gaps; 32-high buttons, 12 side padding, 14/600; on = #4450CE with white text. Security (body.sec-on) and e-Approval
+     (body.eapp-on) swap the body and hide the widgets and the settings button. */
+  .seg{display:none;align-items:center;gap:4px;padding:6px;border-radius:9999px;background:var(--table-head);flex-shrink:0;}
+  body.entry-tab .seg{display:inline-flex;}
+  .seg-btn{height:32px;display:flex;align-items:center;justify-content:center;padding:6px 12px;border-radius:9999px;background:transparent;font-size:14px;line-height:20px;font-weight:600;color:var(--ink-2);white-space:nowrap;transition:background-color .15s,color .15s;}
+  .seg-btn:hover{color:#111827;}
+  .seg-btn.on,.seg-btn.on:hover{background:var(--primary);color:#fff;}
+  body.entry-tab .edit-btn{width:32px;padding:0;}
+  body.entry-tab #editBtnTx{display:none;}
+  body.sec-on #dash,body.sec-on #editBtn{display:none;}
+  /* 위젯 에이전트(2026-11-20 사용자 지시: 알약 대신 그룹웨어 에이전트 안의 아이콘): 톱니 왼쪽의 #waBtn 을 누르면 오른쪽에 대화 패널이 열리고
+     (static/widget_agent.js 가 #waView 를 만든다, body.wa-open) 홈은 그대로 보인다 — 고친 것이 턴마다 홈에 바로 반영된다. 켜지면 파란 바탕,
+     패널을 닫은 채 일하는 중이면 점이 깜박인다. 보안 · 전자결재 화면에서는 숨긴다.
+     the widget agent (2026-11-20, user request: an icon inside the groupware agent instead of a pill): #waBtn left of the gear opens a
+     conversation panel on the right (static/widget_agent.js builds #waView; body.wa-open) while the home stays in view and takes each turn's
+     result at once. Blue when open, a blinking dot while it works with the panel closed; hidden on the security and e-Approval screens. */
+  #waBtn{position:relative;}
+  #waBtn.on{background:var(--primary-soft);color:var(--primary);}
+  #waBtn.busy::after{content:"";position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:var(--primary);box-shadow:0 0 0 2px #fff;animation:waDot 1s ease-in-out infinite;}
+  @keyframes waDot{0%,100%{opacity:.35;}50%{opacity:1;}}
+  @media (prefers-reduced-motion: reduce){#waBtn.busy::after{animation:none;}}
+  body.entry-tab #waBtnTx{display:none;}
+  body.sec-on #waBtn,body.eapp-on #waBtn{display:none;}
+
+  /* ── 전자결재 탭(2026-09-18 캡처 기준, 2026-10-28 Dev 원본 정렬: home/eApproval/components/*): 세그먼트 [전자결재] 선택(body.eapp-on) 시
+     #dash 대신 #eappDash 를 보인다. 위 24 띄고 지표 4칸(96 · 모서리 16 · 숫자 32/40 #4450CE, 누르면 그 탭으로) + 20 띄고 빠른 작성(370) |
+     결재 목록(탭 48 · 밑줄 3 · 표 머리 44 #EFF2FA · 10개씩 쪽 넘김). 데이터는 스크립트의 EA_SEED 데모 시드(API 없음, 연동 시 교체 지점).
+     Dev 처럼 이 화면은 스크롤 영역 높이만큼이고(머리만큼 스크롤) 결재 목록만 안에서 스크롤한다.
+     ── e-Approval tab (per the 2026-09-18 capture; Dev original alignment 2026-10-28: home/eApproval/components/*): selecting [e-Approval]
+     (body.eapp-on) shows #eappDash instead of #dash. 24 below the header four KPI cards (96 high, radius 16, 32/40 #4450CE figures; a click
+     opens that tab), 20 below them quick create (370) | approval list (48 tabs with a 3px underline, a 44 #EFF2FA table head, pages of 10).
+     Data comes from the EA_SEED demo seed in the script (no API; the spot to swap in responses later). As in Dev the screen is as tall as
+     the scroll area (it scrolls by the header height) and only the approval list scrolls inside. ── */
+  body.eapp-on #dash,body.eapp-on #editBtn{display:none;}
+  .eapp{display:none;flex-direction:column;gap:20px;flex:none;height:100%;min-height:560px;padding-top:24px;}
+  body.eapp-on .eapp{display:flex;}
+  /* 지표 4칸 = Dev SummaryCards(간격 12, 96 · 0.8px #CDD1DC · 안쪽 16 · hover #F6F8FD, 라벨 14/20 600, 숫자 32/40 600 #4450CE, 아이콘 원 48 #F2F6FF)
+     four KPI cards = Dev SummaryCards (12 gaps; 96 high, 0.8px #CDD1DC, 16 padding, hover #F6F8FD; 14/20 600 labels; 32/40 600 #4450CE figures; a 48 #F2F6FF icon circle) */
+  .ea-kpis{flex:none;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;}
+  .ea-kpi{height:96px;display:flex;align-items:center;padding:16px;border:.8px solid var(--border);border-radius:16px;background:#fff;color:var(--ink-2);text-align:left;min-width:0;transition:background-color .15s;}
+  .ea-kpi:hover{background:var(--sidebar-bg);}
+  .ea-kpi-in{flex:1;align-self:stretch;display:flex;align-items:flex-end;gap:12px;min-width:0;}
+  .ea-kpi-tx{flex:1;align-self:stretch;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:4px;min-width:0;}
+  .ea-kpi-lb{max-width:100%;font-size:14px;line-height:20px;font-weight:600;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ea-kpi-v{font-size:32px;line-height:40px;font-weight:600;color:var(--primary);font-variant-numeric:tabular-nums;}
+  .ea-kpi-ic{width:48px;height:48px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .ea-kpi-ic svg{width:24px;height:24px;}
+  /* 아래 두 칸(간격 12): 빠른 작성 370 · 1px #DCE0EB | 결재 목록 · 1px #CDD1DC, 둘 다 모서리 16 · 머리 48(16/22 600 · 아래 선 #DCE0EB)
+     the two panels below (12 gap): quick create 370, 1px #DCE0EB | approval list, 1px #CDD1DC; both radius 16 with a 48 head (16/22 600, an #DCE0EB rule) */
+  .ea-main{flex:1 1 0;min-height:0;display:flex;gap:12px;overflow:hidden;}
+  .ea-panel{background:#fff;border:1px solid var(--border);border-radius:16px;display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;}
+  .ea-panel[data-ea="quick"]{flex:none;width:370px;border-color:var(--border-2);}
+  .ea-panel.ea-list{flex:1 1 0;}
+  .ea-hd{flex:none;height:48px;display:flex;align-items:center;padding:8px 16px;border-bottom:1px solid var(--border-2);font-size:16px;line-height:22px;font-weight:600;color:var(--ink-2);}
+  /* 빠른 작성: 새 문서 작성 = #4450CE 알약(16/600 · 아이콘 24), 양식 = #F6F8FD · 0.5px #DCE0EB · 모서리 8 · 안쪽 10/12 · 14/20
+     quick create: New document = a #4450CE pill (16/600, a 24 icon); forms = #F6F8FD, 0.5px #DCE0EB, radius 8, 10/12 padding, 14/20 */
+  .ea-quick{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;padding:16px;}
+  .ea-new{flex:none;width:100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px;border-radius:9999px;background:var(--primary);color:#fff;font-size:16px;line-height:22px;font-weight:600;transition:background-color .15s;}
+  .ea-new:hover{background:#3943B0;}
+  .ea-new:active{background:#2F3796;}
+  .ea-new svg{width:24px;height:24px;}
+  .ea-sub{flex:none;font-size:12px;color:#6B7280;}
+  .ea-forms{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px;overflow-y:auto;padding-right:4px;}
+  .ea-form{width:100%;flex:none;display:flex;align-items:center;gap:8px;padding:10px 12px;border:.5px solid var(--border-2);border-radius:8px;background:var(--sidebar-bg);font-size:14px;line-height:20px;color:var(--ink-2);text-align:left;transition:background-color .15s;}
+  .ea-form:hover{background:var(--soft-3);}
+  .ea-form svg{width:20px;height:20px;}
+  .ea-form .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ea-form svg.chev{width:16px;height:16px;}
+  /* 결재 목록: 탭 48(16px · 안쪽 13/22, 켜짐 600 #21242C + 3px #4450CE 밑줄, 개수 알약 12/700 = 그 탭의 문서 수), 표 = 머리 44 #EFF2FA · 14/20 #5D616A ·
+     칸 14/12 · 선 #CDD1DC · hover #F6F8FD, 상태 알약 4색, 쪽 넘김 44(24 원, 현재 #E8EAF8 + #4450CE)
+     approval list: 48 tabs (16px, 13/22 padding; on = 600 #21242C with a 3px #4450CE underline; 12/700 count pills = the documents in that tab);
+     the table = a 44 #EFF2FA head, 14/20 #5D616A, 14/12 cells, #CDD1DC rules, hover #F6F8FD; four status pill colours; a 44 pager (24 circles, the current one #E8EAF8 + #4450CE) */
+  .ea-tabs{flex:none;display:flex;align-items:flex-end;height:49px;border-bottom:1px solid var(--border-2);overflow-x:auto;overflow-y:hidden;scrollbar-width:none;}
+  .ea-tabs::-webkit-scrollbar{display:none;}
+  .ea-tab{position:relative;flex:none;display:flex;align-items:center;gap:4px;padding:13px 22px;border-radius:4px;font-size:16px;line-height:22px;color:var(--ink-2);white-space:nowrap;}
+  .ea-tab.on{font-weight:600;color:var(--ink);}
+  .ea-tab.on::after{content:"";position:absolute;left:12px;right:12px;bottom:0;height:3px;border-radius:9999px;background:var(--primary);}
+  .ea-bdg{display:inline-flex;align-items:center;justify-content:center;padding:1px 5px;border-radius:9999px;background:var(--table-head);color:var(--primary-ring);font-size:12px;line-height:16px;font-weight:700;font-variant-numeric:tabular-nums;}
+  .ea-tab.on .ea-bdg{background:var(--soft-2);color:#6174F5;}
+  .ea-tbarea{flex:0 1 560px;height:560px;min-height:0;display:flex;flex-direction:column;}
+  .ea-tbwrap{flex:1;min-height:0;overflow:auto;}
+  .ea-tbwrap::-webkit-scrollbar{width:6px;height:6px;} .ea-tbwrap::-webkit-scrollbar-thumb{background:#D9DCE6;border-radius:4px;}
+  .ea-tb{width:100%;min-width:640px;border-collapse:collapse;table-layout:fixed;font-size:14px;line-height:20px;}
+  .ea-tb th{position:sticky;top:0;z-index:1;height:44px;padding:12px;background:var(--table-head);color:var(--ink-3);font-weight:400;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+  .ea-tb td{padding:14px 12px;color:var(--ink-3);border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ea-tb th:first-child,.ea-tb td:first-child{padding-left:24px;}
+  .ea-tb th:last-child,.ea-tb td:last-child{padding-right:24px;}
+  .ea-tb .c{text-align:center;}
+  .ea-tb .num{font-variant-numeric:tabular-nums;}
+  .ea-tb tbody tr[data-eadoc]{cursor:pointer;}
+  .ea-tb tbody tr[data-eadoc]:hover{background:var(--sidebar-bg);}
+  .ea-ttl{display:flex;align-items:center;gap:6px;min-width:0;}
+  .ea-ttl > span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;}
+  .ea-dot{width:8px;height:8px;border-radius:50%;background:#6174F5;flex-shrink:0;}   /* 결재할 문서 표시(Dev) / marks documents to approve (Dev) */
+  .ea-tb .ea-none td{height:240px;padding:0 24px;text-align:center;vertical-align:middle;font-size:12px;line-height:18px;color:#9AA0AD;white-space:normal;}
+  .ea-tb .ea-none span{display:block;}
+  .ea-pill{display:inline-block;padding:2px 6px;border-radius:9999px;font-size:12px;line-height:16px;font-weight:700;white-space:nowrap;}
+  .ea-pill.pending{background:var(--primary-soft);color:#6174F5;} .ea-pill.progress{background:var(--soft-2);color:#2B5BD7;}
+  .ea-pill.done{background:#E8F8EE;color:#1A8F4A;} .ea-pill.rejected{background:#FFF0F1;color:#C50F1F;}
+  .ea-pager{flex:none;height:44px;display:flex;align-items:center;justify-content:center;gap:6px;border-top:1px solid #EEF0F5;}
+  .ea-pg-nav{display:flex;padding:4px;color:#6B7280;}
+  .ea-pg-nav:disabled{opacity:.4;cursor:default;}
+  .ea-pg-nav svg{width:14px;height:14px;}
+  .ea-pg{width:24px;height:24px;border-radius:9999px;font-size:12px;color:#6B7280;}
+  .ea-pg.on{background:#E8EAF8;font-weight:600;color:var(--primary);}
+  @media (max-width:1100px){
+    .eapp{height:auto;min-height:0;}
+    .ea-kpis{grid-template-columns:1fr 1fr;}
+    .ea-main{flex:none;flex-direction:column;overflow:visible;}
+    .ea-panel[data-ea="quick"]{width:auto;}
+    .ea-panel.ea-list{flex:none;}   /* 세로로 쌓이면 내용 높이(머리 48 + 탭 49 + 표 560) / stacked: the content height (48 head + 49 tabs + 560 table) */
+  }
+  @media (max-width:760px){.ea-kpis{grid-template-columns:1fr;}}
+
+  /* ── 보안 에이전트 대시보드(2026-09-07 캡처 기준, 2026-10-28 Dev 원본 정렬: home/security/securityAgent.css) ──
+     Dev 는 이 화면을 데모에서 옮겼고 자기 색(옛 데모 값)을 .sd-root 에 둔다: 바탕 #F7F8FB · 안쪽 22/28/60 · 최대 1320, 카드 = 1px #E6E8EF ·
+     모서리 12 · 안쪽 12/14, 표 머리 #F3F4F8. 그 값을 그대로 쓴다(좌 55 / 우 45 두 열). 라벨은 Dev 문구(resource/language/ko.json securityAgent).
+     ── Security Agent dashboard (per the 2026-09-07 capture; Dev original alignment 2026-10-28: home/security/securityAgent.css) ──
+     Dev ported this screen from the demo and keeps its own colours (the old demo values) on .sd-root: an #F7F8FB ground, 22/28/60 padding,
+     max 1320; cards = 1px #E6E8EF, radius 12, 12/14 padding; #F3F4F8 table heads. Those values are used as is (two columns 55/45). Labels
+     follow the Dev wording (resource/language/ko.json securityAgent). */
+  .sd-root{
+    --primary:#4F46E5; --primary-hover:#4338CA; --primary-mid:#7C81E8;
+    --primary-soft:#EEF0FF; --primary-softer:#F4F5FF; --primary-ring:#C7CBF5;
+    --ink:#1F2430; --ink-2:#3F4654; --muted:#8A91A0; --muted-2:#B4BAC6;
+    --border:#E6E8EF; --border-2:#EDEEF4; --sidebar-bg:#FBFBFD;
+    --danger:#E5484D; --bubble:#F1F2F8; --orange:#F59E0B; --blue:#2563EB;
+    display:none;flex-direction:column;align-items:center;flex:1 0 auto;margin:0 -24px;padding:22px 28px 60px;background:#F7F8FB;color:var(--ink);
+  }
+  body.sec-on .sd-root{display:flex;}
+  body.sec-on .hero{padding-bottom:0;}
+  .sd-root .sec{width:100%;max-width:1320px;display:grid;grid-template-columns:11fr 9fr;gap:14px;align-items:start;}
+  .sd-root .sec-col{display:flex;flex-direction:column;gap:14px;min-width:0;}
+  .sd-root .sec-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;min-width:0;}
+  .sd-root .sec-2b{grid-template-columns:9fr 11fr;}
+  .sd-root .sec-top{display:grid;grid-template-columns:1fr 196px;gap:14px;align-items:stretch;}
+  .sd-root .sd-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 14px;min-width:0;}
+  .sd-root .sd-hd{display:flex;align-items:center;gap:4px 8px;font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:10px;min-height:24px;}
+  /* 오른쪽 값(사용 중인 저장소 3.3TB)이 있는 머리줄만 접는다(2026-09-21) / only headers with a right-hand value wrap (2026-09-21) */
+  .sd-root .sd-hd:has(.sd-used){flex-wrap:wrap;}
+  .sd-root .sd-hd .sp{flex:1;}
+  .sd-root .sd-hd.sub{font-size:12.5px;color:var(--ink-2);margin:10px 0 6px;}
+  .sd-root .sd-used{display:inline-flex;align-items:baseline;gap:6px;margin-left:auto;font-size:12px;font-weight:600;color:var(--ink-2);white-space:nowrap;}
+  .sd-root .sd-used b{font-size:15px;font-weight:800;color:var(--ink);}
+  .sd-root .sd-tb{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;}
+  .sd-root .sd-tb th{background:#F3F4F8;color:var(--ink-2);font-weight:600;padding:6px 6px;text-align:center;white-space:normal;word-break:keep-all;line-height:1.25;overflow:hidden;}
+  .sd-root .sd-tb td{padding:6px 6px;text-align:center;color:var(--ink-2);border-bottom:1px solid var(--border-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;}
+  .sd-root .sd-tb tbody tr:last-child td{border-bottom:none;}
+  .sd-root .sd-tb th.wrap{white-space:normal;line-height:1.25;}
+  .sd-root .sd-tb .l{text-align:left;}
+  .sd-root .sd-tb .num{font-variant-numeric:tabular-nums;}
+  .sd-root .sd-scroll{overflow-y:auto;}
+  .sd-root .sd-scroll::-webkit-scrollbar{width:5px;}
+  .sd-root .sd-scroll::-webkit-scrollbar-thumb{background:#D9DCE6;border-radius:4px;}
+  .sd-root .sd-empty{font-size:12px;color:var(--muted);padding:6px 2px;text-align:center;}
+  .sd-root .sd-btn{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;background:var(--blue);}
+  .sd-root .sd-btn:hover{background:#1D4ED8;}
+  .sd-root .sd-btn svg{width:13px;height:13px;}
+  .sd-root .sd-ban{display:inline-flex;border-radius:50%;padding:2px;}
+  .sd-root .sd-ban:hover{background:#FDECEC;}
+  /* 아이콘 칩 / icon chips */
+  .sd-root .sdi{width:22px;height:22px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;}
+  .sd-root .sdi svg{width:14px;height:14px;}
+  .sd-root .sdi.big{width:34px;height:34px;border-radius:9px;}
+  .sd-root .sdi.big svg{width:20px;height:20px;}
+  .sd-root .sdi.xl{width:44px;height:44px;border-radius:12px;margin:2px auto 8px;display:flex;}
+  .sd-root .sdi.xl svg{width:26px;height:26px;}
+  .sd-root .sdi.red{background:#E5484D;} .sd-root .sdi.amber{background:#F59E0B;} .sd-root .sdi.green{background:#16A34A;} .sd-root .sdi.blue{background:#2563EB;}
+  .sd-root .sdi.indigo{background:var(--primary);} .sd-root .sdi.teal{background:#038387;} .sd-root .sdi.purple{background:#5B5FC7;} .sd-root .sdi.sky{background:#0F6CBD;}
+  .sd-root .sdi.gray{background:#8A91A0;} .sd-root .sdi.orange{background:#EA580C;}
+  /* 상태 스트립: 6항목이 앱 본문 폭(사이드바 포함 ≈720px)에서도 한 줄에 들어가게 최소 96px, 긴 라벨은 두 줄로 접힌다
+     status strip: min 96px so all six fit one row at the app body width (~720px with the sidebar); long labels wrap to two lines */
+  .sd-root .sd-status{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:10px 10px;padding:14px 16px;}
+  .sd-root .sd-st{display:flex;align-items:center;gap:8px;min-width:0;}
+  .sd-root .sd-stic{display:inline-flex;flex-shrink:0;}
+  .sd-root .sd-stic svg{width:28px;height:28px;}
+  .sd-root .sd-st .lb{font-size:12px;font-weight:700;color:var(--ink-2);line-height:1.25;}
+  .sd-root .sd-st .v{font-size:14.5px;font-weight:800;margin-top:2px;white-space:nowrap;}
+  .sd-root .sd-st .v.ok{color:#16A34A;} .sd-root .sd-st .v.warn{color:#F59E0B;} .sd-root .sd-st .v.bad{color:#E5484D;}
+  /* 사용자 · 그룹 개요 / users & groups overview */
+  .sd-root .sd-stats{display:grid;grid-template-columns:1fr 1fr;}
+  .sd-root .sd-stats > div{min-width:0;padding:0 4px;}
+  .sd-root .sd-stats > div + div{border-left:1px solid var(--border-2);padding-left:14px;}
+  .sd-root .sd-big{text-align:center;}
+  .sd-root .sd-big .lb{font-size:12.5px;font-weight:600;color:var(--ink-2);}
+  .sd-root .sd-big .v{font-size:22px;font-weight:800;color:var(--ink);margin-top:2px;}
+  /* 칸 수는 너비를 따른다(2026-09-21) / the column count follows the width (2026-09-21) */
+  .sd-root .sd-mini{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:8px 6px;margin-top:10px;}
+  .sd-root .sd-mini > div{display:flex;align-items:center;gap:6px;min-width:0;}
+  .sd-root .sd-mini > div > div{min-width:0;}
+  .sd-root .sd-mini .t{font-size:11px;color:var(--muted);line-height:1.25;word-break:keep-all;}
+  .sd-root .sd-mini b{display:block;font-size:13px;color:var(--ink);}
+  .sd-root .sd-mini.row4{grid-template-columns:repeat(auto-fit,minmax(108px,1fr));margin-top:0;}
+  /* 숫자 4개짜리 요약(OneDrive · SharePoint): 카드가 넓으면 4칸 한 줄, 좁으면 2칸 두 줄, 숫자를 자르지 않는다
+     four-number summary (OneDrive, SharePoint): one row of four in a wide card, two rows of two in a narrow one; numbers are never cut */
+  .sd-root .sd-kvw{container-type:inline-size;}
+  .sd-root .sd-kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));row-gap:4px;font-size:12px;}
+  .sd-root .sd-kv > div{min-width:0;text-align:center;}
+  .sd-root .sd-kv .h{display:block;background:#F3F4F8;color:var(--ink-2);font-weight:600;padding:6px 4px;line-height:1.25;word-break:keep-all;}
+  .sd-root .sd-kv .v{display:block;padding:7px 4px;color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap;}
+  @container (min-width:400px){.sd-root .sd-kv{grid-template-columns:repeat(4,minmax(0,1fr));}}
+  /* 요약 · 테넌트 / summary & tenant */
+  .sd-root .sd-sum{background:#F3EEFB;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.55;color:var(--ink-2);max-height:112px;overflow-y:auto;}
+  .sd-root .sd-sum::-webkit-scrollbar{width:5px;}
+  .sd-root .sd-sum::-webkit-scrollbar-thumb{background:#D9D2E8;border-radius:4px;}
+  .sd-root .sd-sum b{display:block;color:var(--ink);}
+  .sd-root .sd-sum p+b{margin-top:8px;}
+  .sd-root .sd-tn{display:flex;align-items:center;gap:10px;flex:1;}
+  .sd-root .sd-tn .lb{font-size:11.5px;color:var(--muted);}
+  .sd-root .sd-tn .v{font-size:13px;font-weight:700;color:var(--ink);margin-top:2px;}
+  /* 라이선스 표 / license table */
+  .sd-root .lic-nm{display:flex;align-items:center;gap:8px;min-width:0;}
+  .sd-root .lic-nm span:last-child{overflow:hidden;text-overflow:ellipsis;}
+  .sd-root .lic-ic{width:18px;height:18px;border-radius:50%;background:conic-gradient(from 200deg,#7C3AED,#2563EB,#0EA5E9,#8B5CF6,#7C3AED);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .sd-root .lic-ic::after{content:"";width:6px;height:6px;border-radius:50%;background:#fff;}
+  .sd-root .lic-bar{display:flex;align-items:center;gap:8px;min-width:0;}
+  .sd-root .lic-bar .num{flex-shrink:0;}
+  .sd-root .lic-track{display:block;flex:1 1 60px;min-width:32px;max-width:104px;height:11px;background:#EEF0F6;border-radius:3px;overflow:hidden;}
+  .sd-root .lic-fill{display:block;height:100%;background:#5E3A9E;}
+  @media (max-width:1100px){.sd-root .sec{grid-template-columns:1fr;}}
+  @media (max-width:760px){.sd-root .sec-2,.sd-root .sec-2b,.sd-root .sec-top{grid-template-columns:1fr;}}
+
+
+  /* 3열 그리드: 열 비율은 배치 편집의 기본 비율(1:1:1 · 2:3:3 · 1:2:1)이 정하고 static/home_dash.js 가 --hd-cols 로 넣는다 · 간격 16. 스크립트가 붙으면 열 칸(.col)을
+     걷어 내고 위젯마다 격자 자리(가로 3칸 × 세로 240px 칸)를 준다(4단계) — 아래 열 칸 · 미디어 쿼리는 스크립트가 없을 때의 모양
+     3-column grid: the column ratios come from the base ratio in layout editing (1:1:1, 2:3:3, 1:2:1), set by static/home_dash.js as --hd-cols; 16 gaps.
+     With the script the column wrappers (.col) go and every widget gets a grid area (3 columns by 240px rows, phase 4); the columns and media queries below are the scriptless look */
+  .dash{display:grid;grid-template-columns:var(--hd-cols,1fr 1fr 1fr);gap:16px;align-items:start;}
+  .col{display:flex;flex-direction:column;gap:16px;min-width:0;}
+  /* 중간 폭(앱 iframe 임베드)에서는 2열(좌·중 나란히, 우열 전폭) → 좁으면 1열 / mid width (app iframe): two columns with the right column full-width below → one column when narrow */
+  @media (max-width:1100px){.dash{grid-template-columns:1fr 1fr;} .dash .col[data-col="r"]{grid-column:1/-1;}}
+  @media (max-width:760px){.dash{grid-template-columns:1fr;} .dash .col[data-col="r"]{grid-column:auto;}}
+  /* 위젯 카드 = Dev .gw-card(1px #CDD1DC · 모서리 16 · 흰색 · 그림자 없음) + 머리 41(좌우 14 · 아래 선 #E1E4E9 · 제목 16/600 #30343B), 본문 안쪽은 위젯마다
+     widget card = Dev .gw-card (1px #CDD1DC, radius 16, white, no shadow) with a 41 head (14 sides, an #E1E4E9 rule, a 16/600 #30343B title); each widget sets its body padding */
+  .wg{background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;position:relative;min-width:0;}
+  .wg-head{flex:none;height:41px;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid #E1E4E9;font-size:16px;font-weight:600;color:#30343B;white-space:nowrap;}
+  .wg-head .sp{flex:1;}
+  .wg-sub{font-size:12px;font-weight:400;color:var(--muted);white-space:nowrap;}
+  /* 머리줄 도구 = Dev .gw-iconbtn(26 · 모서리 6 · #8A8C99, hover #F3F3F8 + #52545F) / head tools = Dev .gw-iconbtn */
+  .hd-btn{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#8A8C99;}
+  .hd-btn:hover{background:#F3F3F8;color:#52545F;}
+  .hd-btn svg{width:14px;height:14px;}
+  /* 일정 범위 알약 = Dev .schedule-scope-pill(26 · 알약 · 1px #E2E5EA · 11.5/500 #52545F · 셰브런 13). 근태 연도 선택도 같은 모양
+     the schedule scope pill = Dev .schedule-scope-pill (26, pill, 1px #E2E5EA, 11.5/500 #52545F, a 13 chevron); the attendance year select shares the look */
+  .hd-pill{display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 10px;background:#fff;border:1px solid #E2E5EA;border-radius:9999px;font-size:11.5px;font-weight:500;color:#52545F;}
+  .hd-pill svg{width:13px;height:13px;}
+  /* 글자 버튼 = Dev .gw-textbtn(12/600 #6C4DFF · 더하기 13) / text button = Dev .gw-textbtn (12/600 #6C4DFF, a 13 plus) */
+  .hd-link{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#6C4DFF;}
+  .hd-link svg{width:13px;height:13px;}
+
+
+  /* 오늘의 날씨 = Dev .weather-*(안쪽 20/16, 도시 알약 #F6F8FD 14/20 · 핀 20, 기온 48/600, 그림 100 칸, 설명 16/22 #5D616A).
+     최고/최저는 데모 전용(Dev .weather-range 모양 16/22 600 #6C707A)
+     today's weather = Dev .weather-* (20/16 padding; a #F6F8FD 14/20 city pill with a 20 pin; a 48/600 temperature; a 100 picture box; 16/22 #5D616A text).
+     High / low is demo only (in the Dev .weather-range look, 16/22 600 #6C707A) */
+  .wx-body{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 16px;}
+  .wx-info{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:8px;min-width:0;}
+  .wx-loc{display:inline-flex;align-items:center;gap:4px;margin-bottom:12px;padding:4px 16px 4px 5px;border-radius:9999px;background:var(--sidebar-bg);color:var(--ink-2);font-size:14px;line-height:20px;white-space:nowrap;}
+  .wx-loc svg{width:20px;height:20px;}
+  .wx-temp{font-size:48px;line-height:.9;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;}
+  .wx-hilo{display:flex;align-items:center;gap:6px;font-size:16px;line-height:22px;font-weight:600;color:var(--muted);white-space:nowrap;}
+  .wx-hilo b{font-weight:600;}
+  .wx-icol{display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-end;flex-shrink:0;color:var(--ink-3);font-size:16px;}
+  .wx-emoji{width:100px;height:100px;display:flex;align-items:center;justify-content:center;font-size:76px;line-height:1;}   /* 그림 글자(데이터) / a picture glyph (data) */
+  .wx-desc{align-self:center;padding-top:14px;font-size:16px;line-height:22px;font-weight:400;color:var(--ink-3);white-space:nowrap;}
+
+  /* 일정 = Dev .schedule-card(머리 41 · 좌우 12 · 아래 선 #E5E7EB · 제목 13/600, 달 막대 35 · 제목 11/600 #454A53 · « ‹ 왼쪽 · › » 오른쪽,
+     요일 24 · 10/500, 날짜 칸 25 · 10px, 선택 = 19 원 #5363D7, 오늘 = 700 #5363D7, 점 3 #6674D9, 선 #E8EAEF,
+     일정 = 시각 36 · 막대 3 #5868DB · 제목 11/600 · 장소 10px)
+     schedule = Dev .schedule-card (a 41 head, 12 sides, an #E5E7EB rule, a 13/600 title; a 35 month bar with an 11/600 #454A53 title, « ‹ at the left
+     and › » at the right; a 24 weekday row at 10/500; 25 day cells at 10px; the selected day = a 19 #5363D7 circle, today = 700 #5363D7;
+     a 3 #6674D9 dot; an #E8EAEF rule; events = a 36 time, a 3 #5868DB bar, an 11/600 title and a 10px place) */
+  .wg[data-wg="cal"] .wg-head{padding:0 12px;border-bottom-color:#E5E7EB;font-size:13px;}
+  .cal-nav{position:relative;display:flex;align-items:center;justify-content:center;height:35px;padding:0 10px;}
+  .cal-nav b{font-size:11px;font-weight:600;color:#454A53;}
+  .cal-nb{position:absolute;top:50%;transform:translateY(-50%);display:flex;}
+  .cal-nb.l{left:10px;} .cal-nb.r{right:10px;}
+  .cal-nb button{width:14px;height:22px;display:flex;align-items:center;justify-content:center;color:#8A9099;}
+  .cal-nb button:hover{color:#4D535D;}
+  .cal-nb svg{width:14px;height:14px;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);margin:0 12px;text-align:center;}
+  .cal-wd{height:24px;display:flex;align-items:center;justify-content:center;font-size:10px;line-height:16px;font-weight:500;color:#999EA7;}
+  .cal-wd.sun{color:#E35B62;} .cal-wd.sat{color:#6674D9;}
+  .cal-d{position:relative;height:25px;padding:3px 0;display:flex;align-items:center;justify-content:center;font-size:10px;line-height:19px;font-weight:400;color:#4F545C;}
+  .cal-d.sun{color:#E05259;} .cal-d.sat{color:#6674D9;}
+  .cal-d.blank{pointer-events:none;}
+  .cal-d .n{position:relative;z-index:1;}
+  .cal-d.today:not(.sel){font-weight:700;color:#5363D7;}
+  .cal-d.sel .n{width:19px;height:19px;border-radius:50%;background:#5363D7;color:#fff;font-weight:600;display:flex;align-items:center;justify-content:center;}
+  .cal-d .dot{position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:3px;height:3px;border-radius:50%;background:#6674D9;}
+  .cal-d.sel .dot{bottom:4px;}
+  .cal-div{height:1px;margin:10px 12px 0;background:#E8EAEF;}
+  .cal-sel-t{margin:12px 12px 10px;font-size:11px;line-height:16px;font-weight:700;color:#454A53;}
+  .cal-list{display:flex;flex-direction:column;gap:9px;margin:0 12px 14px;}
+  .ev-row{display:grid;grid-template-columns:36px 3px minmax(0,1fr);align-items:stretch;gap:8px;min-height:31px;}
+  .ev-t{padding-top:1px;font-size:10.5px;line-height:15px;font-weight:700;color:#505660;}
+  .ev-bar{width:3px;min-height:31px;align-self:stretch;background:#5868DB;border-radius:2px;}
+  .ev-c{min-width:0;}
+  .ev-n{font-size:11px;line-height:15px;font-weight:600;color:#363B43;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ev-p{margin-top:1px;font-size:10px;line-height:14px;color:#9A9FA8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ev-p[data-teams]{color:var(--primary);cursor:pointer;}   /* Teams 회의 열기(데모 동작) / opens the Teams meeting (demo behaviour) */
+  .ev-empty{min-height:78px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#A8ADB5;}
+
+  /* 토큰 사용량 = Dev .token-*(안쪽 16, 줄 #F8F9FA · 모서리 8 · 안쪽 12/14, 라벨 12.5 #6B6D79, 값 13/700 #33343E + /한도 12/500 #8A8C99, 막대 6 #5363D7 / #EFEFF5)
+     token usage = Dev .token-* (16 padding; #F8F9FA rows, radius 8, 12/14 padding; 12.5 #6B6D79 labels; 13/700 #33343E values with a 12/500 #8A8C99 /limit; a 6 #5363D7 bar on #EFEFF5) */
+  .tok-body{padding:16px;}
+  .cr-row{background:#F8F9FA;border-radius:8px;padding:12px 14px;margin-bottom:8px;}
+  .cr-top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12.5px;color:#6B6D79;}
+  .cr-v{font-size:13px;font-weight:700;color:#33343E;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .cr-sub{font-size:12px;font-weight:500;color:#8A8C99;}
+  .cr-bar{height:6px;margin-top:8px;border-radius:999px;background:#EFEFF5;overflow:hidden;}
+  .cr-fill{height:100%;border-radius:999px;background:#5363D7;}
+  .cr-note{margin-top:10px;text-align:right;font-size:11px;color:#9A9FA8;}
+
+  /* AI 질문 = Dev 위젯 안의 채팅 입력(ChatInput: 안쪽 16 · 줄 간격 10 · 모서리 24, 위젯에서는 선 #E4E5EC · 그림자 없음; + 40 원 · 범위 알약 40(16/600) ·
+     마이크 40 · 보내기 40 원 #4450CE). 고른 분야는 Dev 처럼 입력칸 앞 글자 칩(16/600 #7186FF)
+     Ask AI = the chat input inside the Dev widget (ChatInput: 16 padding, a 10 row gap, radius 24; in the widget an #E4E5EC line and no shadow;
+     a 40 + circle, a 40 scope pill at 16/600, a 40 mic, a 40 #4450CE send circle). The picked field sits before the input as a text chip (16/600 #7186FF), as in Dev */
+  .ask-body{padding:16px;display:flex;flex-direction:column;gap:12px;}
+  .ask-box{display:flex;flex-direction:column;gap:10px;padding:16px;border:1px solid #E4E5EC;border-radius:24px;background:#fff;}
+  .ask-top{display:flex;align-items:center;gap:6px;min-width:0;}
+  .ask-box input{flex:1;min-width:0;width:100%;border:none;outline:none;background:transparent;font-size:16px;line-height:24px;color:var(--ink);}
+  .ask-box input::placeholder{color:var(--muted-2);}
+  .ask-row{display:flex;align-items:center;gap:8px;}
+  .ask-row .sp{flex:1;}
+  .circle-btn{width:40px;height:40px;border-radius:50%;border:1px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;color:var(--ink);flex-shrink:0;}
+  .circle-btn svg{width:24px;height:24px;}
+  .pill-btn{height:40px;min-width:68px;padding:8px 12px;border:1px solid var(--border);border-radius:9999px;background:#fff;display:flex;align-items:center;justify-content:center;gap:6px;font-size:16px;font-weight:600;color:var(--ink);white-space:nowrap;flex-shrink:0;}
+  .pill-btn .chev{display:flex;}
+  .pill-btn .chev svg{width:16px;height:16px;}
+  .circle-btn:hover,.pill-btn:hover{background:#EDF1FA;border-color:#C3C7D2;}
+  .mic-btn{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ink-3);flex-shrink:0;}
+  .mic-btn:hover{background:#EDF1FA;color:var(--ink);}
+  .mic-btn svg{width:20px;height:20px;}
+  .mini-send{width:40px;height:40px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .mini-send:hover{background:var(--primary-hover);}
+  .mini-send:active{background:var(--primary-active);}
+  .mini-send svg{width:20px;height:20px;}
+  .mini-chip{display:inline-flex;align-items:center;gap:6px;font-size:16px;line-height:24px;font-weight:600;color:var(--primary-mid);white-space:nowrap;flex-shrink:0;}
+  .mini-chip button{display:flex;padding:2px;border-radius:4px;color:var(--ink-3);}
+  .mini-chip button:hover{color:var(--ink);}
+  .mini-chip button svg{width:12px;height:12px;}
+
+  /* 플로팅 메뉴 (＋ 분야 / 검색 방식) = Dev PopUpDialog(모서리 12 · 안쪽 4 · 간격 2 · 항목 32 · 모서리 6 · 14 #3E424B · hover #F6F8FD, 그림자 0 8 16)
+     floating menus (+ field / search scope) = Dev PopUpDialog (radius 12, 4 padding, 2 gaps; 32 items, radius 6, 14 #3E424B, hover #F6F8FD; a 0 8 16 shadow) */
+  .pop{position:fixed;z-index:120;min-width:178px;background:#fff;border:0;border-radius:12px;box-shadow:var(--shadow-pop);padding:4px;display:none;}
+  .pop.show{display:block;}
+  .pop-it{width:100%;min-height:32px;display:flex;align-items:center;gap:8px;padding:6px;margin-bottom:2px;border-radius:6px;font-size:14px;line-height:20px;color:var(--ink-2);text-align:left;}
+  .pop-it:last-child{margin-bottom:0;}
+  .pop-it:hover{background:var(--sidebar-bg);}
+  .pop-it svg{color:currentColor;}
+  .pop-it .ck{margin-left:auto;color:var(--primary);visibility:hidden;}
+  .pop-it.on{color:var(--primary);font-weight:700;}
+  .pop-it.on .ck{visibility:visible;}
+  .pop-div{height:1px;background:var(--border-2);margin:4px -4px;}
+
+  /* 바로가기 = Dev .quicklink-*(3열 · 간격 10 · 안쪽 16; 칸 = #F8F9FD · 1px #F0F2F7 · 모서리 14 · 안쪽 15/8 · 12/600 #4A4D57 · hover #E7EBF6;
+     아이콘 = Dev 단색 글리프 22 #7186FF). .act-btn 클래스는 쓰지 않는다(home-live.js Teams 제거 대상 회피)
+     shortcuts = Dev .quicklink-* (3 columns, 10 gaps, 16 padding; #F8F9FD tiles, 1px #F0F2F7, radius 14, 15/8 padding, 12/600 #4A4D57, hover #E7EBF6;
+     icons = the Dev 22 #7186FF glyphs). Deliberately NOT .act-btn (home-live.js removes .act-btn[data-ns=teams]) */
+  .sc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:16px;}
+  .sc-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:15px 8px;border:1px solid #F0F2F7;border-radius:14px;background:#F8F9FD;font-size:12px;font-weight:600;color:#4A4D57;text-align:center;word-break:keep-all;transition:background-color .2s ease;}
+  .sc-tile:hover{background:var(--soft-3);}
+  .sc-ic{display:flex;align-items:center;justify-content:center;color:var(--primary-mid);}
+  .sc-ic svg{width:22px;height:22px;}
+
+  /* 컬렉션 = Dev .collection-*(줄 안쪽 8/6 · 모서리 8 · 12.5px · hover #F7F7FB, 아이콘 = Dev 컬렉션 원 30, 오른쪽 셰브런 13 #9698A3, 목록 최대 320).
+     누르면 그 컬렉션으로 간다(데모 동작 유지. Dev 의 펼침 → 최근 대화는 남은 구조 차이)
+     collections = Dev .collection-* (8/6 rows, radius 8, 12.5px, hover #F7F7FB; the Dev 30 collection circle; a 13 #9698A3 chevron; list max 320).
+     A click opens the collection (demo behaviour kept; Dev's expand-to-recent-chats is a remaining structural difference) */
+  .cl-list{display:flex;flex-direction:column;gap:2px;max-height:320px;overflow-y:auto;overflow-x:hidden;}
+  .cl-row{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 6px;border-radius:8px;font-size:12.5px;color:#111;text-align:left;}
+  .cl-row:hover{background:#F7F7FB;}
+  .cl-l{display:flex;align-items:center;gap:8px;min-width:0;}
+  .cl-l svg{width:30px;height:30px;}
+  .cl-row .t{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cl-row .chev{display:flex;color:#9698A3;flex-shrink:0;}
+  .cl-row .chev svg{width:13px;height:13px;}
+  .cl-empty{padding:24px 0;text-align:center;font-size:12px;color:#ABADB8;}
+
+  /* 조직도 = Dev .org*(검색 #EFF2FA · 모서리 8 · 안쪽 6/12 · 바깥 12/16 · 13px, 트리 최대 200 · 본부 13/600 #21242C · 파트 12 #5D616A 왼쪽 36 ·
+     선택 #EBEFFE + #4450CE · 인원 11/600 #4450CE, 선 #DCE0EB 12/16, 구성원 제목 14/700 + 수 13/600 #6174F5, 표 머리 #F6F8FD 11/500 #6C707A ·
+     칸 8/12 · 아바타 32 #E2E6F1). 영문 이름 · 파트장 배지는 데모 전용
+     org chart = Dev .org* (an #EFF2FA search, radius 8, 6/12 inside, 12/16 outside, 13px; a 200-max tree with 13/600 #21242C divisions and 12 #5D616A
+     parts at 36 left; #EBEFFE + #4450CE selection; 11/600 #4450CE counts; an #DCE0EB 12/16 rule; a 14/700 member title with a 13/600 #6174F5 count;
+     an #F6F8FD 11/500 #6C707A table head, 8/12 cells, 32 #E2E6F1 avatars). English names and the part-lead badge are demo only */
+  .op-sbox{display:flex;align-items:center;gap:8px;margin:12px 16px;padding:6px 12px;border-radius:8px;background:var(--table-head);color:var(--ink-3);}
+  .op-sbox svg{width:13px;height:13px;}
+  .op-search{flex:1;min-width:0;width:100%;border:none;outline:none;background:transparent;font-size:13px;color:var(--ink-2);}
+  .op-search::placeholder{color:#9EA4B3;}
+  .og-tree{display:flex;flex-direction:column;gap:2px;max-height:200px;overflow-y:auto;padding:0 12px 0 16px;}
+  .og-tree::-webkit-scrollbar,.og-scroll::-webkit-scrollbar{width:6px;} .og-tree::-webkit-scrollbar-thumb,.og-scroll::-webkit-scrollbar-thumb{background:#E2E6F1;border-radius:9999px;}
+  .ot-grp,.ot-kids{display:flex;flex-direction:column;gap:2px;}
+  .ot-row{display:flex;align-items:center;gap:6px;min-height:32px;border-radius:6px;cursor:pointer;}
+  .ot-row.h{padding:0 8px 0 0;font-size:13px;font-weight:600;color:var(--ink);}
+  .ot-row.p{justify-content:space-between;padding:0 12px 0 36px;font-size:12px;color:var(--ink-3);transition:background-color .15s ease;}
+  .ot-row.p:hover{background:#F4F6FB;}
+  .ot-row.sel{background:#EBEFFE;color:var(--primary);font-weight:600;}
+  .ot-caret{display:flex;transition:transform .12s;}
+  .ot-caret svg{width:13px;height:13px;}
+  .ot-grp.closed .ot-caret{transform:rotate(-90deg);}
+  .ot-grp.closed .ot-kids{display:none;}
+  .ot-cnt{margin-left:auto;padding:0 2px;font-size:11px;font-weight:600;color:var(--primary);flex-shrink:0;}
+  .op-empty{padding:16px 8px;font-size:12px;color:var(--muted);text-align:center;display:none;}
+  .og-div{height:1px;margin:12px 16px;background:var(--border-2);}
+  .og-tt{display:flex;align-items:center;gap:6px;padding:0 16px;margin-bottom:12px;}
+  .og-tt .t{font-size:14px;font-weight:700;color:var(--ink);}
+  .og-tt .c{font-size:13px;font-weight:600;color:#6174F5;font-variant-numeric:tabular-nums;}
+  .og-scroll{max-height:200px;overflow:auto;width:100%;}
+  .og-tbl{width:100%;min-width:320px;border-collapse:collapse;font-size:12px;}
+  .og-tbl th{position:sticky;top:0;z-index:1;padding:8px 12px;background:var(--sidebar-bg);border-bottom:1px solid var(--border-2);text-align:left;font-size:11px;font-weight:500;color:var(--muted);}
+  .og-tbl td{padding:8px 12px;border-bottom:1px solid var(--border-2);color:var(--ink-3);vertical-align:middle;}
+  .og-nm{display:flex;align-items:center;gap:10px;}
+  .op-av{width:32px;height:32px;border-radius:50%;background:#E2E6F1;color:var(--ink-3);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .og-nm b{font-size:12px;font-weight:600;color:var(--ink);}
+  .og-en{font-size:11px;color:var(--muted-2);}
+  .op-lead{display:inline-flex;align-items:center;height:16px;padding:0 6px;margin-left:6px;border-radius:9999px;background:var(--primary-soft);color:var(--primary);font-size:10px;font-weight:700;vertical-align:1px;}
+
+  /* 그룹웨어 게시판(2026-09-18 캡처 기준, 데모 전용): 공지사항 | 게시글 두 탭 + 제목 · 작성자 · 작성일 5행. 데모 시드(GB_SEED), API 없음.
+     모양 = Dev 규칙(밑줄 탭 3px #4450CE · 켜짐 600 #21242C, 목록 = Dev .list-plain: 줄 6/4 · 12.5px #33343E · 날짜 11px #ABADB8 · hover #F8F9FD + #5363D7)
+     Groupware board (per the 2026-09-18 capture, demo only): two tabs (announcements | posts) and five rows of title, author and date; demo seed
+     (GB_SEED), no API. Look = Dev rules (a 3px #4450CE underline tab, on = 600 #21242C; the list = Dev .list-plain: 6/4 rows, 12.5px #33343E, 11px
+     #ABADB8 dates, hover #F8F9FD + #5363D7) */
+  .gb-tabs{display:flex;padding:0 14px;border-bottom:1px solid #E1E4E9;}
+  .gb-tab{position:relative;padding:10px 12px;font-size:14px;line-height:20px;color:var(--ink-2);text-align:center;white-space:nowrap;}
+  .gb-tab.on{font-weight:600;color:var(--ink);}
+  .gb-tab.on::after{content:"";position:absolute;left:12px;right:12px;bottom:0;height:3px;border-radius:9999px;background:var(--primary);}
+  #gbList{display:flex;flex-direction:column;gap:8px;padding:12px 14px;}
+  .gb-item{width:100%;display:flex;align-items:center;gap:10px;padding:6px 4px;border-radius:6px;text-align:left;transition:background-color .15s ease;}
+  .gb-item:hover{background:#F8F9FD;}
+  .gb-item .t{flex:1;min-width:0;font-size:12.5px;line-height:1.4;color:#33343E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .gb-item:hover .t{color:#5363D7;}
+  .gb-item .a{flex-shrink:0;width:48px;font-size:11px;color:#8A8C99;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .gb-item .d{flex-shrink:0;font-size:11px;color:#ABADB8;font-variant-numeric:tabular-nums;}
+
+  /* 근태관리(2026-09-18, 데모 전용): 연도 선택(기본 2026) + 연차 4항목 + 바로가기. 데모 시드(ATT_SEED), API 없음.
+     모양 = Dev 규칙(연도 = 일정 범위 알약 모양, 칸 = Dev 토큰 줄 #F8F9FA · 모서리 8 · 안쪽 12/14)
+     Attendance (2026-09-18, demo only): year select (default 2026), four leave figures and a shortcut; demo seed (ATT_SEED), no API.
+     Look = Dev rules (the year select in the schedule scope-pill look; tiles = the Dev token rows, #F8F9FA, radius 8, 12/14 padding) */
+  .hd-sel{appearance:none;-webkit-appearance:none;height:26px;padding:0 26px 0 10px;border:1px solid #E2E5EA;border-radius:9999px;font-size:11.5px;font-weight:500;color:#52545F;cursor:pointer;
+    background:#fff url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2352545F' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 8px center/13px;}
+  .att-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:16px;}
+  .att-tile{background:#F8F9FA;border-radius:8px;padding:12px 14px;min-width:0;}
+  .att-tile .lb{font-size:12.5px;color:#6B6D79;white-space:nowrap;}
+  .att-tile .v{margin-top:4px;font-size:20px;font-weight:700;color:#33343E;font-variant-numeric:tabular-nums;}
+  .att-tile .u{margin-left:3px;font-size:12px;font-weight:500;color:#8A8C99;}
+
+  .toast{position:fixed;left:50%;transform:translateX(-50%);top:24px;min-width:292px;background:#fff;color:var(--ink);font-size:14px;line-height:20px;font-weight:600;
+    border-radius:8px;padding:12px;box-shadow:var(--shadow-pop);opacity:0;pointer-events:none;transition:opacity .18s;z-index:200;}
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="brand">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 .4-8.99A6.5 6.5 0 0 0 5.2 8.5 5 5 0 0 0 6 18.9"/><path d="M8 19h9.5"/></svg>
+    <span class="brand-name">Ai365 Unified</span>
+  </div>
+  <nav class="tabs">
+    <button class="tab" data-tab="home" id="tabHome">Groupware</button>
+    <button class="tab selected" data-tab="workspace" id="tabWs">Workspace</button>
+  </nav>
+  <div class="header-right"><button class="avatar-btn">이</button></div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <button class="icon-btn" title="사이드바"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9.5 4v16"/></svg></button>
+    </div>
+    <div class="sidebar-scroll">
+      <button class="nav-item new-chat"><span class="nav-icon-circle"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>새 채팅</button>
+      <button class="nav-item"><span class="nav-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2"/><rect x="2" y="7" width="20" height="14" rx="2.5"/></svg></span>리소스 센터<span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></button>
+      <button class="sub-item">지식 관리</button>
+      <button class="sub-item">데이터 분석</button>
+      <button class="sub-item">그룹웨어</button>
+      <button class="sub-item">업무 자동화</button>
+      <button class="nav-item"><span class="nav-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span>관리 센터</button>
+      <div class="sidebar-divider"></div>
+      <div class="section-label">컬렉션</div>
+      <button class="nav-item"><span class="nav-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span>컬렉션 추가</button>
+      <button class="chat-item"><span class="chat-title">📁 보도 자료</span></button>
+      <button class="chat-item"><span class="chat-title">📁 뉴스레터</span></button>
+      <div class="sidebar-divider"></div>
+      <div class="section-label">고정</div>
+      <button class="chat-item"><span class="chat-title">경영진 보고서 작성</span></button>
+      <div class="section-label">최근</div>
+      <button class="chat-item"><span class="chat-title">연차 휴가 일수 확인</span></button>
+      <button class="chat-item"><span class="chat-title">월별 POS 매출 분석</span></button>
+    </div>
+    <div class="sidebar-bottom">
+      <button class="nav-item"><span class="nav-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>환경설정</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <section class="view active" id="viewWs">
+      <div class="ws-ph"><div class="ws-ph-card" id="wsPhCard"><b>Workspace 화면 영역</b><br>기존 목업의 워크스페이스 화면이 오는 자리입니다.<br><b>Home</b> 탭을 눌러 홈 시안을 확인하세요.</div></div>
+    </section>
+
+    <section class="view" id="viewHome">
+      <!-- 위 60 막대(Dev 머리줄): 리소스 센터 진입이면 왼쪽에 경로, 위 Groupware 탭 진입이면 비어 있다(앱의 언어 · 계정 묶음이 오른쪽 위에 뜬다) -->
+      <!-- top 60 bar (the Dev header row): the breadcrumb at the left for the Resource Center entry, empty for the top Groupware tab entry (the app's language and account bundle floats at its top right) -->
+      <div class="topbar">
+        <nav class="crumb" aria-label="breadcrumb"><span class="cb-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></span><span class="cb-it">리소스 센터</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg><span class="cb-it">그룹웨어</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg><span class="cb-it cur" id="crumbLast">그룹웨어 에이전트</span></nav>
+      </div>
+      <div class="hero">
+        <!-- 페이지 머리: 제목 + 부제, 오른쪽 = 배치 편집(홈을 편집 상태로, static/home_dash.js) + 에이전트 전환 탭 묶음(Dev 순서) -->
+        <!-- Page header: title + subtitle; on the right Dashboard settings (opens the settings page, static/home_dash.js) and the agent switch group (Dev order) -->
+        <div class="ph">
+          <div>
+            <h1 id="homeTitle">그룹웨어 에이전트</h1>
+            <div class="sub" id="homeSub">중요한 알림과 업무 현황을 한눈에 확인하세요.</div>
+          </div>
+          <span class="sp"></span>
+          <button class="edit-btn" id="waBtn" title="위젯 에이전트" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg><span id="waBtnTx">위젯 에이전트</span></button>
+          <button class="edit-btn" id="editBtn" title="배치 편집"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M1.9105 7.38266C2.27979 6.24053 2.88814 5.19213 3.69084 4.30364C3.82658 4.15339 4.03954 4.09984 4.2302 4.16802L6.14848 4.85392C6.66856 5.03977 7.24082 4.76883 7.42668 4.24875C7.44495 4.19762 7.45903 4.14507 7.46876 4.09173L7.83422 2.08573C7.87055 1.88627 8.02373 1.7285 8.22203 1.6863C8.80222 1.5628 9.39709 1.5 9.99977 1.5C10.6021 1.5 11.1966 1.56273 11.7765 1.68607C11.9747 1.72824 12.1279 1.88591 12.1643 2.08529L12.5308 4.09165C12.6298 4.63497 13.1506 4.9951 13.6939 4.89601C13.7474 4.88627 13.7999 4.87219 13.851 4.85395L15.7693 4.16802C15.96 4.09984 16.173 4.15339 16.3087 4.30364C17.1114 5.19213 17.7197 6.24053 18.089 7.38266C18.1513 7.57534 18.0913 7.78658 17.9369 7.91764L16.3821 9.23773C15.9611 9.5952 15.9096 10.2263 16.267 10.6473C16.3022 10.6887 16.3407 10.7271 16.382 10.7623L17.9369 12.0824C18.0913 12.2134 18.1513 12.4247 18.089 12.6173C17.7197 13.7595 17.1114 14.8079 16.3087 15.6964C16.173 15.8466 15.96 15.9002 15.7693 15.832L13.8511 15.1461C13.331 14.9602 12.7587 15.2312 12.5729 15.7512C12.5546 15.8024 12.5405 15.8549 12.5307 15.9085L12.1643 17.9147C12.1279 18.1141 11.9747 18.2718 11.7765 18.3139C11.1966 18.4373 10.6021 18.5 9.99977 18.5C9.39709 18.5 8.80222 18.4372 8.22203 18.3137C8.02373 18.2715 7.87055 18.1137 7.83422 17.9143L7.46877 15.9084C7.36969 15.365 6.84891 15.0049 6.30559 15.104C6.25216 15.1137 6.19962 15.1278 6.14857 15.1461L4.2302 15.832C4.03954 15.9002 3.82658 15.8466 3.69084 15.6964C2.88814 14.8079 2.27979 13.7595 1.9105 12.6173C1.8482 12.4247 1.90828 12.2134 2.06265 12.0824L3.61749 10.7623C4.03848 10.4048 4.08997 9.77373 3.7325 9.35274C3.69735 9.31135 3.65888 9.27288 3.61751 9.23775L2.06265 7.91764C1.90828 7.78658 1.8482 7.57534 1.9105 7.38266ZM2.97105 7.37709L4.26475 8.47546C4.34754 8.54576 4.42447 8.62269 4.49477 8.70548C5.20971 9.54746 5.10673 10.8096 4.26472 11.5246L2.97105 12.6229C3.2631 13.4051 3.68455 14.1322 4.21599 14.7751L5.81197 14.2044C5.91425 14.1679 6.01933 14.1397 6.12618 14.1202C7.21283 13.922 8.25438 14.6423 8.45256 15.729L8.75653 17.3975C9.1644 17.4655 9.57976 17.5 9.99977 17.5C10.4195 17.5 10.8346 17.4656 11.2422 17.3976L11.547 15.7289C11.5665 15.6221 11.5946 15.517 11.6312 15.4147C12.0029 14.3746 13.1474 13.8327 14.1877 14.2044L15.7835 14.7751C16.315 14.1322 16.7364 13.4051 17.0285 12.6229L15.7348 11.5245C15.652 11.4542 15.5751 11.3773 15.5048 11.2945C14.7898 10.4525 14.8928 9.1904 15.7348 8.47544L17.0285 7.37709C16.7364 6.59486 16.315 5.86783 15.7835 5.22494L14.1876 5.79559C14.0853 5.83214 13.9802 5.8603 13.8734 5.87979C12.7867 6.07796 11.7452 5.3577 11.547 4.27119L11.2422 2.60235C10.8346 2.53443 10.4195 2.5 9.99977 2.5C9.57976 2.5 9.1644 2.53448 8.75653 2.60249L8.45255 4.27105C8.43306 4.37791 8.4049 4.48299 8.36835 4.58527C7.99665 5.62542 6.85212 6.1673 5.81188 5.79556L4.21599 5.22494C3.68455 5.86783 3.2631 6.59486 2.97105 7.37709ZM7.49977 10C7.49977 8.61929 8.61906 7.5 9.99977 7.5C11.3805 7.5 12.4998 8.61929 12.4998 10C12.4998 11.3807 11.3805 12.5 9.99977 12.5C8.61906 12.5 7.49977 11.3807 7.49977 10ZM8.49977 10C8.49977 10.8284 9.17134 11.5 9.99977 11.5C10.8282 11.5 11.4998 10.8284 11.4998 10C11.4998 9.17157 10.8282 8.5 9.99977 8.5C9.17134 8.5 8.49977 9.17157 8.49977 10Z" fill="currentColor"/></svg><span id="editBtnTx">배치 편집</span></button>
+          <!-- 에이전트 전환(상단 Groupware 탭 진입 시만 표시) / agent switch (top Groupware tab entry only) -->
+          <div class="seg" id="agentSeg" role="tablist">
+            <button class="seg-btn on" data-seg="gw" role="tab">그룹웨어 에이전트</button>
+            <!-- 위젯 에이전트는 알약이 아니라 그룹웨어 에이전트 안의 아이콘(#waBtn)으로 연다(2026-11-20 사용자 지시)
+                 the widget agent opens from an icon inside the groupware agent (#waBtn), no longer a pill (user request 2026-11-20) -->
+            <button class="seg-btn" data-seg="eapp" role="tab">전자결재</button>
+            <button class="seg-btn" data-seg="sec" role="tab">보안 에이전트</button>
+          </div>
+        </div>
+        <!-- data-hd="1" = 격자 배치 · 배치 편집 · 만든 위젯은 static/home_dash.js 가 맡는다(GET /api/home/dashboard) / the grid layout, layout editing and made widgets belong to static/home_dash.js -->
+        <div class="dash" id="dash" data-hd="1">
+          <!-- ── 좌열 / left column ── -->
+          <div class="col" data-col="l">
+            <!-- 오늘의 날씨 / today's weather -->
+            <div class="wg" data-wg="wx">
+              <div class="wg-head">오늘의 날씨<span class="sp"></span><span class="wg-sub" id="wxSrc">불러오는 중…</span></div>
+              <div class="wx-body">
+                <div class="wx-info">
+                  <span class="wx-loc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>서울</span>
+                  <div class="wx-temp" id="wxTemp">--°</div>
+                  <div class="wx-hilo"><span>최고</span> <b id="wxHi">--°</b><span class="sep"> / </span><span>최저</span> <b id="wxLo">--°</b></div><!-- 데모 전용 · 라벨을 단독 텍스트 노드로 분리(EN 사전 exact 매치) / demo only; labels split into standalone nodes for the EN dictionary -->
+                </div>
+                <div class="wx-icol"><span class="wx-emoji" id="wxEmoji">⛅</span><span class="wx-desc" id="wxDesc">잠시만요…</span></div>
+              </div>
+            </div>
+
+            <!-- 일정 / schedule -->
+            <div class="wg" data-wg="cal">
+              <div class="wg-head">일정<span class="sp"></span>
+                <span class="hd-pill">전체 일정<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span>
+                <button class="hd-btn" id="calOpen" title="Outlook 일정"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+              </div>
+              <div class="cal-nav">
+                <span class="cal-nb l"><button data-cal="py" title="이전 해"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m11 17-5-5 5-5"/><path d="m18 17-5-5 5-5"/></svg></button><button data-cal="pm" title="이전 달"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button></span>
+                <b id="calLabel"></b>
+                <span class="cal-nb r"><button data-cal="nm" title="다음 달"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button><button data-cal="ny" title="다음 해"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 17 5-5-5-5"/><path d="m13 17 5-5-5-5"/></svg></button></span>
+              </div>
+              <div class="cal-grid" id="calGrid"></div>
+              <div class="cal-div"></div>
+              <div class="cal-sel-t" id="calSelT"></div>
+              <div class="cal-list" id="calList"></div>
+            </div>
+
+            <!-- 토큰 사용량 / token usage -->
+            <div class="wg" data-wg="tok">
+              <div class="wg-head">토큰 사용량</div>
+              <div class="tok-body">
+                <div class="cr-row">
+                  <div class="cr-top"><span>내 토큰 사용량</span><span class="cr-v">12,400<span class="cr-sub">/30,000</span></span></div>
+                  <div class="cr-bar"><div class="cr-fill" style="width:41%"></div></div>
+                </div>
+                <div class="cr-row">
+                  <div class="cr-top"><span>팀 토큰 사용량</span><span class="cr-v">84,200<span class="cr-sub">/200,000</span></span></div>
+                  <div class="cr-bar"><div class="cr-fill" style="width:42%"></div></div>
+                </div>
+                <div class="cr-note">한도는 관리 센터 › 토큰 설정 기준 · 예시 데이터</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── 중열 / middle column ── -->
+          <div class="col" data-col="m">
+            <!-- AI 질문 — 미니 컴포저(기존 id·동작 유지) / Ask AI — mini composer (ids & behavior preserved) -->
+            <div class="wg" data-wg="ask">
+              <div class="wg-head">AI 질문</div>
+              <div class="ask-body">
+                <div class="ask-box">
+                  <div class="ask-top">
+                    <span class="mini-chip" id="miniChip" style="display:none"><span id="miniChipTx"></span><button id="miniChipX"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></span>
+                    <input id="miniInput" type="text" placeholder="무엇을 도와드릴까요?">
+                  </div>
+                  <div class="ask-row">
+                    <button class="circle-btn" id="plusBtn" title="분야 선택·첨부"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
+                    <button class="pill-btn" id="scopeBtn2"><span id="scopeTx">사내</span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></button>
+                    <span class="sp"></span>
+                    <button class="mic-btn" id="micBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11.5" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3.5"/></svg></button>
+                    <button class="mini-send" id="miniSend"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><polyline points="5 12 12 5 19 12"/></svg></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 바로가기 — 구 액션 모드 카드 대체 / shortcuts — replaces the old action-mode card -->
+            <div class="wg" data-wg="sc">
+              <div class="wg-head">바로가기</div>
+              <div class="sc-grid">
+                <button class="sc-tile" data-tool="mail" data-url="https://outlook.office.com/mail"><span class="sc-ic"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.00424 9.30284C2.10744 6.90904 4.08078 5 6.5 5H25.5C27.9192 5 29.8926 6.90904 29.9958 9.30284L28.5201 10.1227L16 16.8642L3.4799 10.1227L2.00424 9.30284ZM2 11.5884V22.5C2 24.9853 4.01472 27 6.5 27H25.5C27.9853 27 30 24.9853 30 22.5V11.5884L29.4741 11.8805L16.4741 18.8805C16.1781 19.0398 15.8219 19.0398 15.5259 18.8805L2.51432 11.8742L2 11.5884Z" fill="currentColor"/></svg></span><span>Outlook 메일</span></button>
+                <button class="sc-tile" data-tool="calendar" data-url="https://outlook.office.com/calendar"><span class="sc-ic"><svg viewBox="51 19 27 26" fill="none" aria-hidden="true"><path d="M51.7773 23.5C51.7773 21.0147 53.7921 19 56.2773 19H73.2773C75.7626 19 77.7773 21.0147 77.7773 23.5V25H51.7773V23.5ZM51.7773 27V40.5C51.7773 42.9853 53.7921 45 56.2773 45H73.2773C75.7626 45 77.7773 42.9853 77.7773 40.5V27H51.7773ZM59.2773 34C58.4489 34 57.7773 33.3284 57.7773 32.5C57.7773 31.6716 58.4489 31 59.2773 31C60.1058 31 60.7773 31.6716 60.7773 32.5C60.7773 33.3284 60.1058 34 59.2773 34ZM60.7773 37.5C60.7773 38.3284 60.1058 39 59.2773 39C58.4489 39 57.7773 38.3284 57.7773 37.5C57.7773 36.6716 58.4489 36 59.2773 36C60.1058 36 60.7773 36.6716 60.7773 37.5ZM64.7773 39C63.9489 39 63.2773 38.3284 63.2773 37.5C63.2773 36.6716 63.9489 36 64.7773 36C65.6058 36 66.2773 36.6716 66.2773 37.5C66.2773 38.3284 65.6058 39 64.7773 39ZM66.2773 32.5C66.2773 33.3284 65.6058 34 64.7773 34C63.9489 34 63.2773 33.3284 63.2773 32.5C63.2773 31.6716 63.9489 31 64.7773 31C65.6058 31 66.2773 31.6716 66.2773 32.5ZM70.2773 34C69.4489 34 68.7773 33.3284 68.7773 32.5C68.7773 31.6716 69.4489 31 70.2773 31C71.1058 31 71.7773 31.6716 71.7773 32.5C71.7773 33.3284 71.1058 34 70.2773 34Z" fill="currentColor"/></svg></span><span>Outlook 일정</span></button>
+                <button class="sc-tile" data-tool="sharepoint" data-url="https://www.office.com/launch/sharepoint"><span class="sc-ic"><svg viewBox="51 20 29 24" fill="none" aria-hidden="true"><path d="M55.7777 20C53.3844 20 51.4443 21.9401 51.4443 24.3333V36.2157L54.1703 31.4941C55.1826 29.7409 57.0533 28.6608 59.0778 28.6608L75.4443 28.6608V27.6667C75.4443 25.2734 73.5042 23.3333 71.111 23.3333H64.1919L61.7372 20.8787C61.1746 20.3161 60.4116 20 59.6159 20H55.7777ZM59.0778 30.6608L76.437 30.6608C78.7464 30.6608 80.1898 33.1608 79.0351 35.1608L74.9869 42.1725C74.3319 43.307 73.1214 44.0059 71.8114 44.0059H54.4523C52.1429 44.0059 50.6995 41.5059 51.8542 39.5059L55.9024 32.4941C56.5574 31.3597 57.7679 30.6608 59.0778 30.6608Z" fill="currentColor"/></svg></span><span>SharePoint</span></button>
+                <button class="sc-tile" data-url="https://teams.microsoft.com"><span class="sc-ic"><svg viewBox="51 19 28 26" fill="none" aria-hidden="true"><path d="M64.7773 27C66.9865 27 68.7773 25.2091 68.7773 23C68.7773 20.7909 66.9865 19 64.7773 19C62.5682 19 60.7773 20.7909 60.7773 23C60.7773 25.2091 62.5682 27 64.7773 27ZM58.7773 23.5C58.7773 25.433 57.2103 27 55.2773 27C53.3443 27 51.7773 25.433 51.7773 23.5C51.7773 21.567 53.3443 20 55.2773 20C57.2103 20 58.7773 21.567 58.7773 23.5ZM77.7773 23.5C77.7773 25.433 76.2103 27 74.2773 27C72.3443 27 70.7773 25.433 70.7773 23.5C70.7773 21.567 72.3443 20 74.2773 20C76.2103 20 77.7773 21.567 77.7773 23.5ZM58.1547 29C57.6057 29.6848 57.2773 30.5541 57.2773 31.5V39C57.2773 40.2346 57.5757 41.3996 58.1042 42.4267C57.4092 42.7928 56.6175 43 55.7773 43C53.0159 43 50.7773 40.7614 50.7773 38V31.5C50.7773 30.1193 51.8966 29 53.2773 29H58.1547ZM71.4505 42.4267C71.979 41.3996 72.2773 40.2346 72.2773 39V31.5C72.2773 30.5541 71.949 29.6848 71.4 29H76.2773C77.6581 29 78.7773 30.1193 78.7773 31.5V38C78.7773 40.7614 76.5388 43 73.7773 43C72.9372 43 72.1455 42.7928 71.4505 42.4267ZM61.2773 29C59.8966 29 58.7773 30.1193 58.7773 31.5V39C58.7773 42.3137 61.4636 45 64.7773 45C68.0911 45 70.7773 42.3137 70.7773 39V31.5C70.7773 30.1193 69.6581 29 68.2773 29H61.2773Z" fill="currentColor"/></svg></span><span>Teams</span></button>
+                <button class="sc-tile" data-tool="todo" data-url="https://to-do.office.com"><span class="sc-ic"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16.0003 2.6665C23.3641 2.6665 29.3337 8.63604 29.3337 15.9998C29.3337 23.3636 23.3641 29.3332 16.0003 29.3332C8.63653 29.3332 2.66699 23.3636 2.66699 15.9998C2.66699 8.63604 8.63653 2.6665 16.0003 2.6665ZM20.2932 11.9594L14.3337 17.919L11.7074 15.2927C11.3169 14.9022 10.6837 14.9022 10.2932 15.2927C9.90269 15.6833 9.90269 16.3164 10.2932 16.7069L13.6266 20.0403C14.0171 20.4308 14.6502 20.4308 15.0408 20.0403L21.7074 13.3736C22.098 12.9831 22.098 12.3499 21.7074 11.9594C21.3169 11.5689 20.6837 11.5689 20.2932 11.9594Z" fill="currentColor"/></svg></span><span>Microsoft To Do</span></button>
+              </div>
+            </div>
+
+            <!-- 컬렉션 / collections -->
+            <div class="wg" data-wg="coll">
+              <div class="wg-head">컬렉션<span class="sp"></span><button class="hd-link" id="collNewBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>새 컬렉션 추가</button></div>
+              <div class="cl-list" id="collList"><div class="cl-empty">불러오는 중…</div></div>
+            </div>
+
+            <!-- 근태관리 — 연도 선택(기본 2026) + 연차 4항목 + 바로가기(2026-09-18, 데모 시드 ATT_SEED · API 없음) -->
+            <!-- attendance — year select (default 2026), four leave figures and a shortcut (2026-09-18, demo seed ATT_SEED, no API) -->
+            <div class="wg" data-wg="att">
+              <div class="wg-head">근태관리<span class="sp"></span>
+                <select class="hd-sel" id="attYear" title="연도"></select>
+                <button class="hd-btn" id="attOpen" title="연간근태현황 바로가기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+              </div>
+              <div class="att-grid" id="attGrid"></div>
+            </div>
+          </div>
+
+          <!-- ── 우열 / right column ── -->
+          <div class="col" data-col="r">
+            <!-- 조직도 — 트리 + 구성원 표 / org chart — tree + member table -->
+            <div class="wg" data-wg="org">
+              <div class="wg-head">조직도</div>
+              <label class="op-sbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input class="op-search" id="opSearch" type="text" placeholder="이름 또는 부서로 검색"></label>
+              <div class="og-tree" id="opTree"></div>
+              <div class="og-div"></div>
+              <div class="og-tt" id="ogTitle"></div>
+              <div class="og-scroll">
+                <table class="og-tbl"><thead><tr><th>이름</th><th>부서</th><th>직위</th></tr></thead><tbody id="ogBody"></tbody></table>
+              </div>
+            </div>
+
+            <!-- 그룹웨어 게시판 — 공지사항 | 게시글 두 탭(2026-09-18 캡처 기준, 데모 시드 GB_SEED · API 없음) -->
+            <!-- Groupware board — two tabs, announcements | posts (per the 2026-09-18 capture, demo seed GB_SEED, no API) -->
+            <div class="wg" data-wg="gwb">
+              <div class="wg-head">그룹웨어 게시판<span class="sp"></span><button class="hd-btn" id="gbOpen" title="공지사항 바로가기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button></div>
+              <div class="gb-tabs" id="gbTabs" role="tablist">
+                <button type="button" class="gb-tab on" data-gbtab="notice" role="tab" aria-selected="true">공지사항</button>
+                <button type="button" class="gb-tab" data-gbtab="post" role="tab" aria-selected="false">게시글</button>
+              </div>
+              <div id="gbList"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── 보안 에이전트 대시보드(2026-09-07 캡처 기준) — 상단 Groupware 탭 → [보안 에이전트] 선택 시 #dash 대신 표시(body.sec-on).
+             표 본문·수치는 스크립트의 SEC 시드로 렌더한다(추후 API 응답으로 교체할 지점). 아이콘은 data-ico 로 두고 부팅 때 SVG 로 채운다. ── -->
+        <!-- ── Security Agent dashboard (per the 2026-09-07 capture) — replaces #dash when [Security Agent] is selected from the
+             top Groupware tab (body.sec-on). Table bodies and figures render from the SEC seed in the script (the spot to swap in
+             an API response later). Icons are declared via data-ico and filled with SVG at boot. ── -->
+        <div class="sd-root">
+        <div class="sec" id="secDash">
+          <!-- 좌열 / left column -->
+          <div class="sec-col">
+            <!-- 종합 상태 스트립 / overall status strip -->
+            <div class="sd-card sd-status" id="secStatus"></div>
+            <!-- 위험한 사용자·위험한 로그인 / risky users & risky sign-ins -->
+            <div class="sd-card">
+              <div class="sd-hd"><span class="sdi red" data-ico="risk"></span>위험 사용자, 위험 로그인<span class="sp"></span><button class="sd-btn" id="secRefresh" title="새로고침" data-ico="refresh"></button></div>
+              <div class="sd-scroll" style="max-height:122px">
+                <table class="sd-tb"><colgroup><col style="width:96px"><col><col><col style="width:48px"></colgroup>
+                  <thead><tr><th>날짜</th><th>사용자</th><th>상태</th><th>삭제</th></tr></thead><tbody id="secRisky"></tbody></table>
+              </div>
+            </div>
+            <!-- 점검 4종 / four check groups -->
+            <div class="sec-2">
+              <div class="sec-col">
+                <div class="sd-card"><div class="sd-hd"><span class="sdi blue" data-ico="user"></span>사용자 관리</div>
+                  <table class="sd-tb"><thead><tr><th>점검 항목</th><th>상태</th></tr></thead><tbody id="secChkUser"></tbody></table></div>
+                <div class="sd-card"><div class="sd-hd"><span class="sdi sky" data-ico="ops"></span>운영 관리</div>
+                  <table class="sd-tb"><thead><tr><th>점검 항목</th><th>상태</th></tr></thead><tbody id="secChkOps"></tbody></table></div>
+              </div>
+              <div class="sec-col">
+                <div class="sd-card"><div class="sd-hd"><span class="sdi green" data-ico="shield"></span>인증 관리</div>
+                  <table class="sd-tb"><thead><tr><th>점검 항목</th><th>상태</th></tr></thead><tbody id="secChkAuth"></tbody></table></div>
+                <div class="sd-card"><div class="sd-hd"><span class="sdi amber" data-ico="log"></span>로그 관리</div>
+                  <table class="sd-tb"><thead><tr><th>점검 항목</th><th>상태</th></tr></thead><tbody id="secChkLog"></tbody></table></div>
+              </div>
+            </div>
+            <div class="sec-2 sec-2b">
+              <div class="sec-col">
+                <!-- 사용자 개요 · 그룹 개요 / users & groups overview -->
+                <div class="sd-card">
+                  <div class="sd-stats">
+                    <div>
+                      <div class="sd-hd"><span class="sdi orange" data-ico="users"></span>사용자 개요</div>
+                      <span class="sdi xl orange" data-ico="users"></span>
+                      <div class="sd-big"><div class="lb">전체 사용자</div><div class="v" id="secUsersTotal"></div></div>
+                      <div class="sd-mini" id="secUsersMini"></div>
+                    </div>
+                    <div>
+                      <div class="sd-hd"><span class="sdi blue" data-ico="group"></span>그룹 개요</div>
+                      <span class="sdi xl blue" data-ico="group"></span>
+                      <div class="sd-big"><div class="lb">전체 그룹</div><div class="v" id="secGroupsTotal"></div></div>
+                      <div class="sd-mini" id="secGroupsMini"></div>
+                    </div>
+                  </div>
+                </div>
+                <!-- 신규/삭제 개요 / new & deleted overview -->
+                <div class="sd-card">
+                  <div class="sd-hd"><span class="sdi blue" data-ico="change"></span>신규/삭제 개요</div>
+                  <div class="sd-mini row4" id="secChanges"></div>
+                </div>
+                <!-- 신규 사용자 · 삭제 사용자 / new & deleted users -->
+                <div class="sd-card">
+                  <div class="sd-hd"><span class="sdi blue" data-ico="userplus"></span>신규 사용자</div>
+                  <table class="sd-tb"><colgroup><col style="width:92px"><col></colgroup><thead><tr><th>생성일</th><th>계정 이름</th></tr></thead><tbody id="secNewUsers"></tbody></table>
+                  <div class="sd-hd" style="margin-top:12px"><span class="sdi gray" data-ico="userminus"></span>제거된 사용자</div>
+                  <table class="sd-tb"><thead><tr><th>삭제일</th><th>영구 삭제일</th><th>표시 이름</th></tr></thead><tbody id="secDelUsers"></tbody></table>
+                </div>
+                <!-- 전역 관리자 / global administrators -->
+                <div class="sd-card">
+                  <div class="sd-hd"><span class="sdi indigo" data-ico="admin"></span>전역 관리자</div>
+                  <table class="sd-tb"><thead><tr><th>표시 이름</th><th>계정 이름</th></tr></thead><tbody id="secAdmins"></tbody></table>
+                </div>
+              </div>
+              <div class="sec-col">
+                <!-- Microsoft 365 서비스 사용 현황 + Teams 사용 현황 / M365 service usage + Teams usage -->
+                <div class="sd-card">
+                  <div class="sd-hd"><span class="sdi sky" data-ico="grid"></span>Microsoft 365 서비스 사용 현황</div>
+                  <table class="sd-tb"><thead><tr><th>서비스</th><th>활성 사용자</th><th>비활성 사용자</th><th>전체 사용자</th></tr></thead><tbody id="secSvc"></tbody></table>
+                  <div class="sd-hd" style="margin-top:14px"><span class="sdi purple" data-ico="teams"></span>Teams 사용 현황</div>
+                  <table class="sd-tb"><thead><tr><th>비공개 팀</th><th>활성 비공개 팀</th><th>공개 팀</th><th>활성 공개 팀</th></tr></thead><tbody id="secTeams"></tbody></table>
+                </div>
+                <!-- Exchange 사용 현황 / Exchange usage -->
+                <div class="sd-card">
+                  <div class="sd-hd"><span class="sdi sky" data-ico="mail"></span>Exchange 사용 현황</div>
+                  <div class="sd-hd sub">저장소 할당량 상태별 사용자 사서함<span class="sp"></span><span class="sd-used"><span>사용 중인 저장소</span><b id="secExUsed"></b></span></div>
+                  <table class="sd-tb"><thead><tr><th>정상 (한도 이내)</th><th>경고 발생</th><th>보내기 금지</th><th>보내기/받기 금지</th></tr></thead><tbody id="secExQuota"></tbody></table>
+                  <div class="sd-hd sub">저장소 사용량 상위 사용자</div>
+                  <table class="sd-tb"><colgroup><col><col style="width:96px"><col style="width:66px"></colgroup><thead><tr><th class="l">사용자 이름</th><th class="wrap">저장소 사용량 (MB)</th><th class="wrap">할당량 상태</th></tr></thead><tbody id="secExTop"></tbody></table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- 우열 / right column -->
+          <div class="sec-col">
+            <div class="sec-top">
+              <!-- 대시보드 요약 / dashboard summary -->
+              <div class="sd-card">
+                <div class="sd-hd"><span class="sdi indigo" data-ico="chat"></span>Dashboard Summary</div>
+                <div class="sd-sum" id="secSummary"></div>
+              </div>
+              <div class="sec-col">
+                <div class="sd-card sd-tn"><span class="sdi big blue" data-ico="building"></span><div><div class="lb">고객 이름</div><div class="v" id="secCompany"></div></div></div>
+                <div class="sd-card sd-tn"><span class="sdi big sky" data-ico="cube"></span><div><div class="lb">테넌트 이름</div><div class="v" id="secTenant"></div></div></div>
+              </div>
+            </div>
+            <!-- 라이선스 / licenses -->
+            <div class="sd-card">
+              <div class="sd-scroll" style="max-height:520px">
+                <table class="sd-tb"><colgroup><col><col style="width:104px"><col style="width:190px"></colgroup>
+                  <thead><tr><th class="l">이름</th><th>사용 가능한 라이선스</th><th class="l">할당된 라이선스</th></tr></thead><tbody id="secLic"></tbody></table>
+              </div>
+            </div>
+            <!-- OneDrive · SharePoint 사용 현황 / OneDrive & SharePoint usage -->
+            <div class="sec-2">
+              <div class="sd-card">
+                <div class="sd-hd"><span class="sdi blue" data-ico="cloud"></span>OneDrive 사용 현황<span class="sp"></span><span class="sd-used"><span>사용 중인 저장소</span><b id="secOdUsed"></b></span></div>
+                <div class="sd-kvw"><div class="sd-kv" id="secOd"></div></div>
+              </div>
+              <div class="sd-card">
+                <div class="sd-hd"><span class="sdi teal" data-ico="layers"></span>SharePoint 사용 현황<span class="sp"></span><span class="sd-used"><span>사용 중인 저장소</span><b id="secSpUsed"></b></span></div>
+                <div class="sd-kvw"><div class="sd-kv" id="secSp"></div></div>
+              </div>
+            </div>
+            <div class="sec-2">
+              <div class="sd-card">
+                <div class="sd-hd"><span class="sdi blue" data-ico="cloud"></span>저장소 사용량 상위 OneDrive 사용자</div>
+                <table class="sd-tb"><colgroup><col><col style="width:118px"></colgroup><thead><tr><th class="l">소유자 계정 이름</th><th>저장소 사용량 (MB)</th></tr></thead><tbody id="secOdTop"></tbody></table>
+              </div>
+              <div class="sd-card">
+                <div class="sd-hd"><span class="sdi teal" data-ico="layers"></span>저장소 사용량 상위 SharePoint 사이트</div>
+                <table class="sd-tb"><colgroup><col><col style="width:118px"></colgroup><thead><tr><th class="l">사이트 이름</th><th>저장소 사용량 (GB)</th></tr></thead><tbody id="secSpTop"></tbody></table>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+        <!-- ── 전자결재 탭(2026-09-18 캡처 기준, 2026-10-28 Dev 원본 정렬): 세그먼트 [전자결재] 선택 시 #dash 대신 표시(body.eapp-on).
+             지표 수치 · 탭 개수 · 목록 · 쪽 넘김 · 최근 양식은 스크립트의 EA_SEED 데모 시드로 그린다(API 없음, 연동 시 응답으로 교체할 지점). ── -->
+        <!-- ── e-Approval tab (per the 2026-09-18 capture; Dev original alignment 2026-10-28): replaces #dash when [e-Approval] is selected
+             (body.eapp-on). KPI figures, tab counts, the list with its pages and the recent forms render from the EA_SEED demo seed in the
+             script (no API; the spot to swap in responses later). ── -->
+        <div class="eapp" id="eappDash">
+          <div class="ea-kpis">
+            <button type="button" class="ea-kpi" data-ea="pending"><span class="ea-kpi-in"><span class="ea-kpi-tx"><span class="ea-kpi-lb">결재할 문서</span><span class="ea-kpi-v" id="eaCnt_pending">0</span></span>
+              <span class="ea-kpi-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></span></span></button>
+            <button type="button" class="ea-kpi" data-ea="progress"><span class="ea-kpi-in"><span class="ea-kpi-tx"><span class="ea-kpi-lb">진행중 문서</span><span class="ea-kpi-v" id="eaCnt_progress">0</span></span>
+              <span class="ea-kpi-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span></span></button>
+            <button type="button" class="ea-kpi" data-ea="done"><span class="ea-kpi-in"><span class="ea-kpi-tx"><span class="ea-kpi-lb">완료 문서</span><span class="ea-kpi-v" id="eaCnt_done">0</span></span>
+              <span class="ea-kpi-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></span></span></button>
+            <button type="button" class="ea-kpi" data-ea="rejected"><span class="ea-kpi-in"><span class="ea-kpi-tx"><span class="ea-kpi-lb">반려 문서</span><span class="ea-kpi-v" id="eaCnt_rejected">0</span></span>
+              <span class="ea-kpi-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg></span></span></button>
+          </div>
+          <div class="ea-main">
+            <div class="ea-panel" data-ea="quick">
+              <div class="ea-hd">빠른 작성</div>
+              <div class="ea-quick">
+                <button type="button" class="ea-new" id="eaNew"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M3 15h6"/><path d="M6 12v6"/></svg><span>새 문서 작성</span></button>
+                <div class="ea-sub">최근 작성한 양식</div>
+                <div class="ea-forms" id="eaForms"></div>
+              </div>
+            </div>
+            <div class="ea-panel ea-list" data-ea="list">
+              <div class="ea-hd">결재 목록</div>
+              <div class="ea-tabs" id="eaTabs" role="tablist"></div>
+              <div class="ea-tbarea">
+                <div class="ea-tbwrap">
+                  <table class="ea-tb"><colgroup><col><col style="width:110px"><col style="width:160px"><col style="width:130px"><col style="width:122px"></colgroup>
+                    <thead><tr><th>문서명</th><th>기안자</th><th>부서</th><th>요청일</th><th class="c">상태</th></tr></thead>
+                    <tbody id="eaRows"></tbody></table>
+                </div>
+                <div class="ea-pager" id="eaPager"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="pop" id="miniPop"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function toast(msg){ var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._tm); t._tm=setTimeout(function(){ t.classList.remove('show'); },2600); }
+  function setTx(id, v){ var el=document.getElementById(id); if(el) el.textContent=v; }
+  /* 부모 앱의 KO/EN 토글 — 사전으로 못 덮는 날짜·월 표기만 페이지가 직접 로케일 처리(라벨 문자열은 home-live.js 사전 담당) */
+  /* Parent app's KO/EN toggle — only date/month formats (which a dictionary can't cover) are localized here;
+     label strings stay KO for the home-live.js dictionary */
+  function isEn(){ try{ return localStorage.getItem('ai365_lang')==='en'; }catch(e){ return false; } }
+  function pad(n){ return (n<10?'0':'')+n; }
+
+  /* ── 탭 전환 + Workspace 연결 ── */
+  /* IS_APP: 백엔드(/home)가 서빙 중이면 Workspace는 placeholder가 아니라 실제 앱(/)으로 돌아간다.
+     file://로 단독으로 열면 종전 placeholder 동작 그대로(시안 단독 검토용). */
+  /* IS_APP: when served by the backend (/home), Workspace returns to the real app (/) instead of the
+     placeholder. Opened standalone via file:// it keeps the placeholder behavior (design review). */
+  var IS_APP = location.protocol.indexOf('http')===0;
+  /* EMBED: 앱 본문 iframe 안에서 열림 — 자체 헤더 숨김(.embed CSS) + 페이지 이동 대신
+     부모 창 postMessage(리로드 없는 인앱 통합, 사용자 확정). 교차 출처 접근 예외는 임베드로 간주. */
+  /* EMBED: opened inside the app's content iframe — hide our own header (.embed CSS) and talk to
+     the parent via postMessage instead of navigating (reload-free in-app integration, user decision).
+     A cross-origin access exception counts as embedded. */
+  var EMBED=false; try{ EMBED = window.self!==window.top; }catch(e){ EMBED=true; }
+  if(EMBED) document.documentElement.classList.add('embed');
+  function gwPost(kind,q){ try{ window.parent.postMessage({type:'ai365-gw-home', kind:kind, q:q||'', scope:(typeof scope!=='undefined'?scope:''), field:(typeof miniField!=='undefined'&&miniField)?miniField:''}, location.origin); }catch(e){} }   // scope·field(2026-09-15): 부모가 사내 > 그룹웨어 모드로 채팅을 연다 / the parent opens the chat in Internal > Groupware
+  var tabs={home:document.getElementById('tabHome'), workspace:document.getElementById('tabWs')};
+  var views={home:document.getElementById('viewHome'), workspace:document.getElementById('viewWs')};
+  function show(name){
+    Object.keys(tabs).forEach(function(k){
+      tabs[k].classList.toggle('selected', k===name);
+      views[k].classList.toggle('active', k===name);
+    });
+    document.querySelector('.layout').classList.toggle('no-side', name==='home');
+  }
+  tabs.home.addEventListener('click', function(){ show('home'); });
+  tabs.workspace.addEventListener('click', function(){ if(IS_APP){ location.href='/'; return; } show('workspace'); });
+  if(IS_APP) show('home');   // /home 진입은 홈 화면부터 / entering via /home starts on the home screen
+
+  var wsCard=document.getElementById('wsPhCard');
+  function goWorkspace(q, mode){
+    if(EMBED){
+      // 임베드: 미니 컴포저 전송(mode 없음)=chat으로 질문 전달, 내비=nav(뷰 닫기만). 부모(adapter)가 openBlankChat을 직접 호출.
+      // Embedded: a mini-composer send (no mode) posts 'chat'; nav clicks post 'nav' (close the view). The parent calls openBlankChat.
+      gwPost((!mode && q)?'chat':'nav', q);
+      return;
+    }
+    if(IS_APP){
+      // 미니 컴포저 전송은 질문을 들고 Workspace로(?q=) — 앱이 채팅을 시작한다(@ 토큰 포함). 내비 클릭은 Workspace로만 이동.
+      // A composer send carries the question via ?q= (the app starts the chat, @ tokens included); nav clicks just go to Workspace.
+      location.href=(!mode && q) ? '/?q='+encodeURIComponent(q)+'&scope='+encodeURIComponent(scope||'')+'&field='+encodeURIComponent(miniField||'') : '/';
+      return;
+    }
+    var body;
+    if(mode==='nav') body='<span class="q">「'+esc(q)+'」</span>(으)로 이동했습니다.<br>실서비스에서는 해당 화면이 열립니다.';
+    else{
+      var extra=[]; if(miniField) extra.push(miniField+' 에이전트'); if(scope!=='자동') extra.push('검색 방식: '+scope);
+      body='<span class="q">「'+esc(q)+'」</span> 질문으로 새 채팅이 시작됩니다.'+(extra.length?'<br>('+esc(extra.join(' · '))+')':'')+'<br>실서비스에서는 채팅 화면으로 자연스럽게 이어집니다.';
+    }
+    wsCard.innerHTML='<b>Workspace 화면 영역</b><br>'+body;
+    show('workspace');
+  }
+  // [data-nav] 위임 — 동적으로 렌더되는 컬렉션 행도 포함 / delegated so dynamically rendered collection rows work too
+  document.addEventListener('click', function(e){
+    var b=e.target.closest('[data-nav]'); if(!b) return;
+    goWorkspace(b.dataset.nav,'nav');
+  });
+
+  /* ── 날씨: Open-Meteo 무료 API 실연동 + 실패 시 예시 폴백 ── */
+  /* ── Weather: Open-Meteo free API, sample fallback on failure ── */
+  var WMO={0:['맑음','☀️'],1:['대체로 맑음','🌤️'],2:['구름 조금','⛅'],3:['흐림','☁️'],45:['안개','🌫️'],48:['안개','🌫️'],
+    51:['이슬비','🌦️'],53:['이슬비','🌦️'],55:['이슬비','🌧️'],61:['비','🌧️'],63:['비','🌧️'],65:['강한 비','🌧️'],
+    71:['눈','🌨️'],73:['눈','🌨️'],75:['폭설','❄️'],80:['소나기','🌦️'],81:['소나기','🌧️'],82:['강한 소나기','⛈️'],
+    95:['뇌우','⛈️'],96:['뇌우','⛈️'],99:['뇌우','⛈️']};
+  function wxSet(t, code, hi, lo, rain, hum, src){
+    var w=WMO[code]||['흐림','☁️'];
+    setTx('wxEmoji', w[1]);
+    setTx('wxTemp', Math.round(t)+'°');
+    setTx('wxDesc', w[0]);
+    setTx('wxHi', Math.round(hi)+'°');
+    setTx('wxLo', Math.round(lo)+'°');
+    setTx('wxHiLo', Math.round(hi)+'° / '+Math.round(lo)+'°');
+    setTx('wxRain', rain+'%');
+    setTx('wxHum', hum+'%');
+    setTx('wxSrc', src);
+  }
+  fetch('https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.978&current=temperature_2m,weather_code,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FSeoul&forecast_days=1')
+    .then(function(r){ return r.json(); })
+    .then(function(d){ wxSet(d.current.temperature_2m, d.current.weather_code, d.daily.temperature_2m_max[0], d.daily.temperature_2m_min[0], d.daily.precipitation_probability_max[0], d.current.relative_humidity_2m, 'Open-Meteo 실시간'); })
+    .catch(function(){ wxSet(28, 2, 31, 24, 20, 65, '예시 데이터 (오프라인)'); });
+
+  /* ── 날짜 유틸(오늘 기준 렌더) ── / ── date helpers (rendered relative to today) ── */
+  /* 오늘 = KST 날짜(서버가 kst.js 를 주입)로 만든 로컬 자정 Date, 달력 계산은 이 날짜에서 시작한다. file:// 단독 열람엔 도우미가 없어 브라우저 날짜
+     today = a local-midnight Date built from the KST date (the server injects kst.js); calendar math starts from it. A standalone file:// open has no helper, so the browser's date */
+  var today=(function(){ var k=(typeof ai365KstParts==='function')?ai365KstParts():null, d=k?new Date(k.y, k.m-1, k.d):new Date(); d.setHours(0,0,0,0); return d; })();
+  var WD_KO=['일','월','화','수','목','금','토'], WD_EN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var MON_EN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  function dkey(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+  function monthLabel(y,m){ return isEn()? MON_EN[m]+' '+y : y+'년 '+(m+1)+'월'; }
+  function dateLabel(d){
+    var wd=(isEn()?WD_EN:WD_KO)[d.getDay()];
+    return isEn()? MON_EN[d.getMonth()].slice(0,3)+' '+d.getDate()+', '+d.getFullYear()+' ('+wd+')'
+                 : d.getFullYear()+'년 '+(d.getMonth()+1)+'월 '+d.getDate()+'일 ('+wd+')';
+  }
+
+  /* ── 일정: 월 달력 + 선택일 목록. 오늘 일정은 종전 날씨 카드의 캘린더 브리핑 시드 재사용 ── */
+  /* ── Schedule: month calendar + selected-day list. Today's events reuse the old weather-card briefing seed ── */
+  var EVENTS={};
+  EVENTS[dkey(today)]=[
+    {t:'10:00', n:'주간 업무 회의', p:'Teams', teams:1},
+    {t:'14:00', n:'경력 채용 면접', p:'회의실 A'},
+    {t:'16:30', n:'데이터 리뷰', p:'Teams', teams:1}
+  ];
+  var calView={y:today.getFullYear(), m:today.getMonth()}, calSel=new Date(today);
+  var calGrid=document.getElementById('calGrid'), calList=document.getElementById('calList');
+  function renderCal(){
+    setTx('calLabel', monthLabel(calView.y, calView.m));
+    var wds=isEn()?WD_EN:WD_KO, h='';
+    wds.forEach(function(w,i){ h+='<div class="cal-wd'+(i===0?' sun':i===6?' sat':'')+'">'+w+'</div>'; });
+    var first=new Date(calView.y, calView.m, 1), n=new Date(calView.y, calView.m+1, 0).getDate();
+    for(var b=0;b<first.getDay();b++) h+='<div class="cal-d blank"></div>';
+    for(var d=1; d<=n; d++){
+      var dt=new Date(calView.y, calView.m, d), k=dkey(dt), wd=dt.getDay();
+      var cls='cal-d'+(wd===0?' sun':wd===6?' sat':'')+(k===dkey(today)?' today':'')+(k===dkey(calSel)?' sel':'');
+      h+='<button class="'+cls+'" data-day="'+k+'"><span class="n">'+d+'</span>'+(EVENTS[k]?'<span class="dot"></span>':'')+'</button>';
+    }
+    calGrid.innerHTML=h;
+    setTx('calSelT', dateLabel(calSel));
+    var ev=EVENTS[dkey(calSel)]||[];
+    calList.innerHTML=ev.length
+      ? ev.map(function(e){ return '<div class="ev-row"><span class="ev-t">'+esc(e.t)+'</span><span class="ev-bar"></span><div class="ev-c"><div class="ev-n">'+esc(e.n)+'</div><div class="ev-p"'+(e.teams?' data-teams="1"':'')+'>'+esc(e.p)+'</div></div></div>'; }).join('')
+      : '<div class="ev-empty">이 날의 일정이 없습니다.</div>';
+  }
+  document.querySelectorAll('[data-cal]').forEach(function(b){ b.addEventListener('click', function(){
+    var k=b.dataset.cal;
+    if(k==='py') calView.y--; else if(k==='ny') calView.y++;
+    else if(k==='pm'){ calView.m--; if(calView.m<0){ calView.m=11; calView.y--; } }
+    else if(k==='nm'){ calView.m++; if(calView.m>11){ calView.m=0; calView.y++; } }
+    renderCal();
+  }); });
+  calGrid.addEventListener('click', function(e){
+    var b=e.target.closest('[data-day]'); if(!b) return;
+    var p=b.dataset.day.split('-'); calSel=new Date(+p[0], +p[1]-1, +p[2]); renderCal();
+  });
+  calList.addEventListener('click', function(e){ if(e.target.closest('[data-teams]')) toast('실서비스에서는 Teams 회의가 열립니다 (예시)'); });
+  document.getElementById('calOpen').addEventListener('click', function(){ window.open('https://outlook.office.com/calendar','_blank','noopener'); });
+  renderCal();
+
+  // 부모 KO/EN 토글에 반응해 달력 날짜 표기 재렌더(동일 출처 storage 이벤트). 토큰 위젯의 날짜줄은 Dev 처럼 두지 않는다(2026-10-28)
+  // re-render the calendar date formats on the parent's KO/EN toggle (same-origin storage event); the token widget has no date line, as in Dev (2026-10-28)
+  window.addEventListener('storage', function(e){ if(e.key==='ai365_lang') renderCal(); });
+
+  /* ── 미니 컴포저 실동작: ＋ 분야 메뉴 · 검색 방식 · 칩 ── / ── mini composer: + field menu · scope · chip ── */
+  var miniField='그룹웨어', scope='사내';   // 기본 모드 사내 > 그룹웨어(2026-09-15 사용자 지시) / default mode Internal > Groupware (user request 2026-09-15)
+  var pop=document.getElementById('miniPop');
+  function openPop(anchor, html){
+    pop.innerHTML=html; pop.classList.add('show');
+    var r=anchor.getBoundingClientRect();
+    pop.style.left=Math.max(8, Math.min(r.left, window.innerWidth-pop.offsetWidth-8))+'px';
+    pop.style.top=Math.max(8, r.bottom+8)+'px';
+  }
+  function closePop(){ pop.classList.remove('show'); }
+  document.addEventListener('click', function(e){
+    if(!e.target.closest('#miniPop') && !e.target.closest('#plusBtn') && !e.target.closest('#scopeBtn2')) closePop();
+  });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') closePop(); });
+
+  var FIELD_IC={'지식 관리':'<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.6 6.3 6.8.5-5.2 4.3 1.7 6.6L12 16.9l-5.9 3.3 1.7-6.6-5.2-4.3 6.8-.5z"/></svg>',
+    '데이터 분석':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M11 3.5A8.5 8.5 0 1 0 20.5 13H11z"/><path d="M13 2.5V11h8.5A8.5 8.5 0 0 0 13 2.5z"/></svg>',
+    '그룹웨어':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>',
+    '업무 자동화':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13a8 8 0 0 1 16 0"/><path d="M4 13v4a2 2 0 0 0 2 2h1v-6H5a1 1 0 0 0-1 1zM20 13v4a2 2 0 0 1-2 2h-1v-6h2a1 1 0 0 1 1 1z"/></svg>'};
+  document.getElementById('plusBtn').addEventListener('click', function(e){
+    e.stopPropagation();
+    if(pop.classList.contains('show')){ closePop(); return; }
+    var h=Object.keys(FIELD_IC).map(function(f){
+      return '<button class="pop-it'+(miniField===f?' on':'')+'" data-field="'+f+'">'+FIELD_IC[f]+f
+        +'<span class="ck"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="4.5 12.5 10 18 19.5 6.5"/></svg></span></button>';
+    }).join('')
+    +'<div class="pop-div"></div>'
+    +'<button class="pop-it" data-file="1"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21.4 11.05 12.35 20.1a5.9 5.9 0 0 1-8.35-8.35l9.05-9.05a3.94 3.94 0 0 1 5.57 5.57l-9.06 9.05a1.97 1.97 0 0 1-2.78-2.79l8.36-8.35"/></svg>파일 첨부</button>';
+    openPop(this, h);
+  });
+  document.getElementById('scopeBtn2').addEventListener('click', function(e){
+    e.stopPropagation();
+    if(pop.classList.contains('show')){ closePop(); return; }
+    var DESC={'자동':'사내 자료 우선, 부족하면 웹 보완','사내':'사내 자료만 사용','외부':'웹 검색만 사용'};
+    var h=['자동','사내','외부'].map(function(s){
+      return '<button class="pop-it'+(scope===s?' on':'')+'" data-scope="'+s+'">'+s+'<span style="font-size:11px;color:var(--muted);margin-left:2px">'+DESC[s]+'</span>'
+        +'<span class="ck"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="4.5 12.5 10 18 19.5 6.5"/></svg></span></button>';
+    }).join('');
+    openPop(this, h);
+  });
+  pop.addEventListener('click', function(e){
+    var b=e.target.closest('.pop-it'); if(!b) return;
+    if(b.dataset.field){
+      miniField = (miniField===b.dataset.field)? null : b.dataset.field;
+      var chip=document.getElementById('miniChip');
+      if(miniField){ document.getElementById('miniChipTx').textContent=miniField; chip.style.display='inline-flex'; }
+      else chip.style.display='none';
+    }
+    else if(b.dataset.scope){ scope=b.dataset.scope; document.getElementById('scopeTx').textContent=scope; }
+    else if(b.dataset.file){ toast('파일 첨부는 예시입니다 — 실서비스에서 연결됩니다'); }
+    closePop();
+  });
+  document.getElementById('miniChipX').addEventListener('click', function(){ miniField=null; document.getElementById('miniChip').style.display='none'; });
+  if(miniField){ document.getElementById('miniChipTx').textContent=miniField; document.getElementById('miniChip').style.display='inline-flex'; }   // 기본 분야 칩 표시 / show the default domain chip
+  document.getElementById('micBtn').addEventListener('click', function(){ toast('음성 입력은 예시입니다'); });
+
+  var mi=document.getElementById('miniInput');
+  function goSend(){ var v=mi.value.trim(); if(!v) return; mi.value=''; goWorkspace(v); }
+  mi.addEventListener('keydown', function(e){ if(e.key==='Enter') goSend(); });
+  document.getElementById('miniSend').addEventListener('click', goSend);
+
+  /* ── 바로가기(2026-09-15 사용자 지시): 모든 타일이 해당 앱(Outlook 메일·일정, SharePoint, Teams, To Do)을 새 탭으로 연다 — @토큰 삽입 폐지 ── */
+  /* ── Shortcuts (user request 2026-09-15): every tile opens its app (Outlook mail/calendar, SharePoint, Teams, To Do) in a new tab — no more @token insertion ── */
+  document.querySelectorAll('.sc-tile').forEach(function(b){ b.addEventListener('click', function(){
+    if(!b.dataset.url) return;
+    var w=window.open(b.dataset.url,'_blank','noopener');
+    if(!w) toast('팝업이 차단되었습니다. 브라우저에서 새 창 열기를 허용해 주세요');
+  }); });
+
+  /* ── 컬렉션: 앱 서빙 시 GET /api/collections, 아니면(파일 열람·실패) 시드 ── */
+  /* ── Collections: GET /api/collections when served by the app; seed otherwise (file:// or failure) ── */
+  var COLL_SEED=[{name:'보도 자료'},{name:'뉴스레터'},{name:'컨텐츠'}];
+  // Dev 컬렉션 아이콘(원 30 #F2F6FF + 폴더 #7186FF) / the Dev collection icon (a 30 #F2F6FF circle with a #7186FF folder)
+  var COLL_SVG='<svg viewBox="0 0 30 30" fill="none" aria-hidden="true"><path d="M0 15C0 6.71573 6.71573 0 15 0C23.2843 0 30 6.71573 30 15C30 23.2843 23.2843 30 15 30C6.71573 30 0 23.2843 0 15Z" fill="#F2F6FF"/><path d="M7 10.5C7 9.11929 8.11929 8 9.5 8H11.9822C12.4464 8 12.8915 8.18437 13.2197 8.51256L14.5 9.79289L12.4393 11.8536C12.3456 11.9473 12.2184 12 12.0858 12H7V10.5ZM7 13V19.5C7 20.8807 8.11929 22 9.5 22H20.5C21.8807 22 23 20.8807 23 19.5V12.5C23 11.1193 21.8807 10 20.5 10H15.7071L13.1464 12.5607C12.8651 12.842 12.4836 13 12.0858 13H7Z" fill="#7186FF"/></svg>';
+  function renderColl(list){
+    var box=document.getElementById('collList');
+    if(!list.length){ box.innerHTML='<div class="cl-empty">컬렉션이 없습니다.</div>'; return; }
+    box.innerHTML=list.map(function(c){
+      return '<button class="cl-row" data-nav="컬렉션 › '+esc(c.name)+'"><span class="cl-l">'+COLL_SVG+'<span class="t">'+esc(c.name)+'</span></span>'
+        +'<span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></button>';
+    }).join('');
+  }
+  if(IS_APP){
+    fetch('/api/collections').then(function(r){ return r.json(); })
+      .then(function(l){ renderColl(Array.isArray(l)&&l.length?l:COLL_SEED); })
+      .catch(function(){ renderColl(COLL_SEED); });
+  } else renderColl(COLL_SEED);
+  var cn=document.getElementById('collNewBtn');
+  if(cn) cn.addEventListener('click', function(){ toast('실서비스에서는 컬렉션 생성 창이 열립니다 (예시)'); });
+
+  /* ── 조직도: 종전 #opTree 시드(실명 42명)를 데이터로 옮겨 트리 + 구성원 표로 렌더 ── */
+  /* ── Org chart: the old #opTree seed (42 real names) moved into data, rendered as tree + member table ── */
+  /* 이메일 소스 — [이름,부서,이메일](종전 자동완성 시드 재사용; 영문 소문자 표기는 이메일 로컬파트에서 파생) */
+  /* Email source — [name, dept, email] (old autocomplete seed reused; lowercase Latin name derived from the local part) */
+  var PEOPLE=[["홍서연","대표이사","demo-54980c78e3@workspace.example"],["김민준","재무회계파트","demo-1866e8de0c@workspace.example"],["이서윤","재무회계파트","demo-5f99a8a5e8@workspace.example"],["박도윤","재무회계파트","demo-049de66871@workspace.example"],["최지우","영업관리파트","demo-6a8446d73b@workspace.example"],["정하준","인사총무","demo-dd97072f8f@workspace.example"],["강수아","인사총무","demo-f5ae9a8818@workspace.example"],["조예준","인사총무","demo-f2fc40caa6@workspace.example"],["윤지호","PMO파트","demo-5075b9e0de@workspace.example"],["임채원","PMO파트","demo-23d045a57c@workspace.example"],["한지안","PMO파트","demo-f732db2a5e@workspace.example"],["오은우","PMO파트","demo-168fa3e25d@workspace.example"],["서지민","PMO파트","demo-9e157960f0@workspace.example"],["신예린","PMO파트","demo-c043dfd455@workspace.example"],["권민서","PMO파트","demo-7a72ebaa2f@workspace.example"],["황시우","PMO파트","demo-561ba051fe@workspace.example"],["안하은","PMO파트","demo-91cf46abb1@workspace.example"],["송지율","PMO파트","demo-5fd8ff8c4a@workspace.example"],["전유나","PMO파트","demo-7fdafdd583@workspace.example"],["홍준우","기술운영파트","demo-2bed24fa4f@workspace.example"],["고서진","기술운영파트","demo-9fbb1518c8@workspace.example"],["문가은","기술운영파트","demo-5c35f381b9@workspace.example"],["양도현","AI 파트","demo-d05ec51e5c@workspace.example"],["배수빈","AI 파트","demo-b75d2b264c@workspace.example"],["백지윤","AI 파트","demo-e1b0f639ec@workspace.example"],["허준서","AI 파트","demo-9b462a1103@workspace.example"],["유다은","AI 파트","demo-3c99a9ac94@workspace.example"],["남시연","AI 파트","demo-e263ec5297@workspace.example"],["심우진","AI 파트","demo-a09dfc5d15@workspace.example"],["노하린","AI 파트","demo-8ce677c173@workspace.example"],["하지환","AI 파트","demo-f0e26c528c@workspace.example"],["곽서아","AI 파트","demo-0b0f8972b5@workspace.example"],["홍서연","AI Agent 파트","demo-ad5f25d00e@workspace.example"],["김민준","AI Agent 파트","demo-468f3f73e2@workspace.example"],["이서윤","AI Agent 파트","demo-1d026a2310@workspace.example"],["박도윤","AI Agent 파트","demo-86bb64f88a@workspace.example"],["최지우","AI Agent 파트","demo-2d07c907e2@workspace.example"],["정하준","AI Agent 파트","demo-52b7b77434@workspace.example"],["강수아","AI Agent 파트","demo-5fde068245@workspace.example"],["조예준","AI Agent 파트","demo-511548326f@workspace.example"],["윤지호","Front-End 파트","demo-6bf5df5073@workspace.example"],["임채원","Front-End 파트","demo-1e9b63fc7a@workspace.example"]];
+  /* 본부 → 파트 → 구성원 [이름, 직책, 파트장?] / division → part → members [name, title, lead?] */
+  var ORG=[
+    {n:'대표이사', persons:[['홍서연','대표']]},
+    {n:'경영지원본부', parts:[
+      {n:'재무회계파트', persons:[['김민준','책임',1],['이서윤','수석'],['박도윤','과장']]},
+      {n:'영업관리파트', persons:[['최지우','과장',1]]},
+      {n:'인사총무', persons:[['정하준','차장',1],['강수아','부장'],['조예준','사원']]}]},
+    {n:'PMO', parts:[
+      {n:'PMO파트', persons:[['윤지호','책임',1],['임채원','책임'],['한지안','수석'],['오은우','대리'],['서지민','과장'],['신예린','차장'],['권민서','부장'],['황시우','사원'],['안하은','선임'],['송지율','책임'],['전유나','수석']]},
+      {n:'기술운영파트', persons:[['홍준우','대리',1],['고서진','과장'],['문가은','차장']]}]},
+    {n:'AI365 개발본부', parts:[
+      {n:'AI 파트', persons:[['양도현','부장',1],['배수빈','사원'],['백지윤','선임'],['허준서','책임'],['유다은','수석'],['남시연','대리'],['심우진','과장'],['노하린','차장'],['하지환','부장'],['곽서아','사원']]},
+      {n:'AI Agent 파트', persons:[['홍서연','선임',1],['김민준','책임'],['이서윤','수석'],['박도윤','대리'],['최지우','과장'],['정하준','차장'],['강수아','부장'],['조예준','사원']]},
+      {n:'Front-End 파트', persons:[['윤지호','선임',1],['임채원','책임']]}]}
+  ];
+  function enName(nm, part){
+    var hit=PEOPLE.filter(function(p){ return p[0]===nm && p[1]===part; })[0] || PEOPLE.filter(function(p){ return p[0]===nm; })[0];
+    return hit ? hit[2].split('@')[0].replace(/\d+/g,'').replace(/\./g,' ') : '';
+  }
+  function leaves(){ var out=[]; ORG.forEach(function(h){ if(h.persons) out.push(h); (h.parts||[]).forEach(function(p){ out.push(p); }); }); return out; }
+  function cnt(node){ return node.persons ? node.persons.length : (node.parts||[]).reduce(function(s,p){ return s+p.persons.length; },0); }
+  function matchP(pr, part, q){ return !q || pr[0].indexOf(q)>-1 || enName(pr[0],part).indexOf(q.toLowerCase())>-1 || part.toLowerCase().indexOf(q.toLowerCase())>-1; }
+  var ogSel=null, ogQ='';
+  var CARET='<span class="ot-caret"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span>';
+  var opTree=document.getElementById('opTree'), ogBody=document.getElementById('ogBody'), ogTitle=document.getElementById('ogTitle');
+  var closedSet={};
+  // 상위 본부명도 검색 매치에 포함(리뷰 지적: 본부명 검색 시 트리엔 파트가 남는데 구성원 표는 비던 불일치)
+  // The parent division name also counts as a match (review fix: a division-name search kept the parts in the tree but emptied the member table)
+  function hqOf(node){ for(var i=0;i<ORG.length;i++){ if(ORG[i].parts && ORG[i].parts.indexOf(node)>-1) return ORG[i].n; } return ''; }
+  function hqMatch(node){ var hq=hqOf(node); return !!(ogQ && hq && hq.toLowerCase().indexOf(ogQ.toLowerCase())>-1); }
+  function visibleP(node){ if(hqMatch(node)) return node.persons.slice(); return node.persons.filter(function(pr){ return matchP(pr, node.n, ogQ); }); }
+  function nodeVisible(node){ return !ogQ || node.n.toLowerCase().indexOf(ogQ.toLowerCase())>-1 || hqMatch(node) || visibleP(node).length>0; }
+  function renderOrg(){
+    var q=ogQ, h='', any=false;
+    ORG.forEach(function(hq){
+      if(hq.persons){   // 파트 없는 본부(대표이사) = 그 자체가 선택 가능한 잎 / division without parts (CEO) = selectable leaf itself
+        if(!nodeVisible(hq)) return; any=true;
+        h+='<div class="ot-row h'+(ogSel===hq.n?' sel':'')+'" data-og="'+esc(hq.n)+'"><span style="width:13px"></span>'+esc(hq.n)+'<span class="ot-cnt">'+cnt(hq)+'</span></div>';
+        return;
+      }
+      var kids=hq.parts.filter(function(p){ return nodeVisible(p) || (q && hq.n.toLowerCase().indexOf(q.toLowerCase())>-1); });
+      if(!kids.length) return; any=true;
+      var closed=!q && closedSet[hq.n];
+      h+='<div class="ot-grp'+(closed?' closed':'')+'"><div class="ot-row h" data-ot="'+esc(hq.n)+'">'+CARET+esc(hq.n)+'<span class="ot-cnt">'+cnt(hq)+'</span></div><div class="ot-kids">';
+      kids.forEach(function(p){ h+='<div class="ot-row p'+(ogSel===p.n?' sel':'')+'" data-og="'+esc(p.n)+'">'+esc(p.n)+'<span class="ot-cnt">'+cnt(p)+'</span></div>'; });
+      h+='</div></div>';
+    });
+    opTree.innerHTML=h+'<div class="op-empty" id="opEmpty"'+(any?'':' style="display:block"')+'>검색 결과가 없습니다</div>';
+    // 선택 파트가 검색으로 숨었으면 보이는 첫 파트로 / if the selected part is filtered out, fall back to the first visible one
+    var lv=leaves(), selNode=lv.filter(function(n){ return n.n===ogSel && nodeVisible(n); })[0];
+    if(!selNode){ selNode=lv.filter(nodeVisible)[0]; ogSel=selNode?selNode.n:null; opTree.querySelectorAll('.ot-row.sel').forEach(function(r){ r.classList.remove('sel'); }); var r=ogSel&&opTree.querySelector('[data-og="'+ogSel.replace(/"/g,'\\"')+'"]'); if(r) r.classList.add('sel'); }
+    if(!selNode){ ogTitle.innerHTML=''; ogBody.innerHTML=''; return; }
+    var rows=visibleP(selNode);
+    ogTitle.innerHTML='<span class="t"><span>'+esc(selNode.n)+'</span> <span>구성원</span></span><span class="c">'+rows.length+'</span>';
+    ogBody.innerHTML=rows.map(function(pr){
+      return '<tr><td><span class="og-nm"><span class="op-av">'+esc(pr[0].charAt(0))+'</span><span><b>'+esc(pr[0])+'</b> <span class="og-en">'+esc(enName(pr[0],selNode.n))+'</span></span></span></td>'
+        +'<td>'+esc(selNode.n)+'</td><td>'+esc(pr[1])+(pr[2]?'<span class="op-lead">파트장</span>':'')+'</td></tr>';
+    }).join('');
+  }
+  opTree.addEventListener('click', function(e){
+    var hd=e.target.closest('[data-ot]');
+    if(hd){ closedSet[hd.dataset.ot]=!closedSet[hd.dataset.ot]; hd.parentElement.classList.toggle('closed', !!closedSet[hd.dataset.ot]); return; }
+    var r=e.target.closest('[data-og]'); if(!r) return;
+    ogSel=r.dataset.og; renderOrg();
+  });
+  var ops=document.getElementById('opSearch');
+  if(ops) ops.addEventListener('input', function(){ ogQ=this.value.trim(); renderOrg(); });
+  ogSel='재무회계파트';
+  renderOrg();
+
+  /* ── 그룹웨어 게시판·근태관리 위젯(2026-09-18) — 데모 시드(GB_SEED·ATT_SEED), API 없음.
+     연동 시 교체 지점: GB_SEED = 최신 글 목록 조회(공지사항/게시글, 5건씩), ATT_SEED = 연차 현황 조회(연도별).
+     글 행·바로가기 클릭은 연동 전이라 안내 토스트만 띄운다(연동 시 글 주소·연간근태현황 주소를 연다). ── */
+  /* ── Groupware board and attendance widgets (2026-09-18) — demo seeds (GB_SEED, ATT_SEED), no API.
+     Swap points for the integration: GB_SEED = latest posts lookup (announcements / posts, five each), ATT_SEED = leave
+     status lookup per year. Row and shortcut clicks only show a notice toast until the integration provides the URLs. ── */
+  (function(){
+    var gbList=document.getElementById('gbList'), gbTabs=document.getElementById('gbTabs'), gbOpen=document.getElementById('gbOpen');
+    var attGrid=document.getElementById('attGrid'), attYear=document.getElementById('attYear'), attOpen=document.getElementById('attOpen');
+    if(!gbList || !gbTabs || !gbOpen || !attGrid || !attYear || !attOpen) return;
+    // [제목, 작성자, 작성일(ISO)] 최신순 5건 / [title, author, date (ISO)], newest first, five each
+    var GB_SEED={
+      notice:[
+        ['[안내] 2026년 추석 연휴 휴무 및 비상 연락망 안내','한소희','2026-09-17'],
+        ['[안내] 하반기 정보보안 교육 이수 안내 (9/30까지)','이도윤','2026-09-15'],
+        ['[공지] 10월 조직개편 및 인사발령','한소희','2026-09-10'],
+        ['[안내] 법인카드 사용 기준 개정 안내','박연진','2026-09-03'],
+        ['[안내] 사내 자격증 취득 지원 제도 확대','한소희','2026-08-28']
+      ],
+      post:[
+        ['3분기 전사 타운홀 미팅 자료 공유','김지수','2026-09-17'],
+        ['9월 신규 입사자를 소개합니다','한소희','2026-09-16'],
+        ['사내 동호회 하반기 회원 모집','정하준','2026-09-12'],
+        ['지하 주차장 공사 기간 이용 안내','박연진','2026-09-08'],
+        ['고객 세미나 후기와 발표 자료','최서연','2026-09-02']
+      ]
+    };
+    // 연도별 [발생 연차, 전년 이월, 사용 일수, 잔여 일수] — 잔여 = 발생 + 이월 − 사용, 다음 해 이월 = 전년 잔여
+    // per year [granted, carried over, used, left] — left = granted + carried − used; next year's carry-over = last year's left
+    var ATT_SEED={'2026':[15,2,9.5,7.5], '2025':[15,1.5,14.5,2], '2024':[15,0,13.5,1.5]};
+    var ATT_LABELS=['발생 연차','전년 이월','사용 일수','잔여 일수'];
+    var gbTab='notice';
+    function gbDay(iso){ return iso.slice(5,7)+'/'+iso.slice(8,10); }
+    function gbRender(){
+      gbTabs.querySelectorAll('.gb-tab').forEach(function(b){ var on=b.dataset.gbtab===gbTab; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+      gbOpen.title = gbTab==='notice' ? '공지사항 바로가기' : '게시글 바로가기';   // 바로가기는 현재 탭을 따른다(연동 시 공지사항/전체 게시글 주소) / the shortcut follows the active tab
+      gbList.innerHTML=GB_SEED[gbTab].map(function(p){
+        return '<button type="button" class="gb-item" data-gbpost="1" title="'+esc(p[0])+'"><span class="t">'+esc(p[0])+'</span><span class="a">'+esc(p[1])+'</span><span class="d">'+gbDay(p[2])+'</span></button>';
+      }).join('');
+    }
+    function attRender(){
+      // 단위는 1글자라 EN 사전이 못 다룬다 — 페이지가 언어에 맞춰 직접 그린다 / the unit is one character, so the page localizes it itself
+      var v=ATT_SEED[attYear.value]||[0,0,0,0], unit=isEn()?'d':'일';
+      attGrid.innerHTML=ATT_LABELS.map(function(lb,i){
+        return '<div class="att-tile"><div class="lb">'+lb+'</div><div class="v"><span>'+v[i]+'</span><span class="u">'+unit+'</span></div></div>';
+      }).join('');
+    }
+    attYear.innerHTML=Object.keys(ATT_SEED).sort().reverse().map(function(y){ return '<option value="'+y+'">'+y+'</option>'; }).join('');
+    attYear.value='2026';   // 기본 연도(사용자 지시) / default year (user request)
+    gbTabs.addEventListener('click', function(e){ var b=e.target.closest('[data-gbtab]'); if(b){ gbTab=b.dataset.gbtab; gbRender(); } });
+    gbList.addEventListener('click', function(e){ if(e.target.closest('[data-gbpost]')) toast('그룹웨어 연동 후 이용할 수 있습니다'); });
+    gbOpen.addEventListener('click', function(){ toast('그룹웨어 연동 후 이용할 수 있습니다'); });
+    attYear.addEventListener('change', attRender);
+    attOpen.addEventListener('click', function(){ toast('근태관리 연동 후 이용할 수 있습니다'); });
+    window.addEventListener('storage', function(e){ if(e.key==='ai365_lang') attRender(); });
+    gbRender(); attRender();
+  })();
+
+  /* 위젯 배치와 배치 편집은 static/home_dash.js 가 맡는다(2026-11-13: 서버에 저장하는 배치 · 만든 위젯, 2026-11-17 4단계: 3열 격자 · 끌어 옮기기 · 크기 조절).
+     종전의 편집 모드(▲▼✕ · 숨긴 위젯 트레이 · localStorage)는 걷었다 — 옛 저장본 ai365_home_widgets_v2 는 그 스크립트가 한 번 옮긴다. */
+  /* Widget layout and layout editing live in static/home_dash.js (2026-11-13: a server-saved layout and made widgets; phase 4 on
+     2026-11-17: a 3-column grid, drag to move, resize). The former edit mode (▲▼✕, hidden-widget tray, localStorage) is gone; that script moves an old
+     ai365_home_widgets_v2 layout over once. */
+  /* ── 보안 에이전트 대시보드(2026-09-07, 사용자 캡처 기준) ──
+     상단 Groupware 탭 → [보안 에이전트] 선택 시 #dash 대신 #secDash 를 보인다. 수치·표 본문은 아래 SEC_SEED 한 곳에서
+     렌더하므로(secRender), 나중에 M365 보안 API 응답으로 바꿀 때 이 시드만 교체하면 된다. 삭제(⛔)는 데모용 로컬 제거,
+     새로고침(↻)은 시드 복원이다. 종합 상태·위험 항목은 위험 로그인 목록 유무로 계산한다. */
+  /* ── Security Agent dashboard (2026-09-07, per the user's capture) ──
+     Selecting [Security Agent] from the top Groupware tab shows #secDash instead of #dash. Figures and table bodies
+     render from the single SEC_SEED below (secRender), so swapping in an M365 security API response later only
+     replaces the seed. Delete (⛔) is a local demo removal; refresh (↻) restores the seed. The overall / risky status
+     is derived from whether the risky sign-in list is empty. */
+  var SEC_ICO = {
+    risk:'<path d="M12 4 3 19.5h18z"/><path d="M12 10v4M12 16.8h.01"/>',
+    user:'<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20.5c.8-4 3.8-6 7.5-6s6.7 2 7.5 6"/>',
+    users:'<circle cx="9" cy="8.5" r="3.2"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M15.5 5.5a3 3 0 0 1 0 6M17.5 14.6c2.4.5 3.7 2.2 4 5.4"/>',
+    shield:'<path d="M12 3 5 5.8v5.6c0 4.4 3 7.9 7 9.6 4-1.7 7-5.2 7-9.6V5.8z"/><path d="m9.3 12 2 2 3.6-3.8"/>',
+    ops:'<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>',
+    log:'<path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+    group:'<rect x="9" y="3" width="6" height="4.5" rx="1"/><rect x="3" y="16.5" width="6" height="4.5" rx="1"/><rect x="15" y="16.5" width="6" height="4.5" rx="1"/><path d="M12 7.5v4M6 16.5v-3h12v3"/>',
+    grid:'<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>',
+    mail:'<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="m3.5 7 8.5 6 8.5-6"/>',
+    cloud:'<path d="M7 18.5a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4.5 4.5 0 0 1-.5 10z"/>',
+    layers:'<path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/>',
+    teams:'<circle cx="9" cy="8.5" r="3.2"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M15.5 5.5a3 3 0 0 1 0 6M17.5 14.6c2.4.5 3.7 2.2 4 5.4"/>',
+    chat:'<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4A2.5 2.5 0 0 1 4 13.5z"/><path d="M8 8h8M8 11.5h5"/>',
+    building:'<path d="M3 21h18M5 21V8l7-4 7 4v13"/><path d="M9 12h2M13 12h2M9 16h2M13 16h2"/>',
+    cube:'<path d="M12 2.5 3 7v10l9 4.5 9-4.5V7z"/><path d="M12 12 3 7M12 12l9-5M12 12v9.5"/>',
+    refresh:'<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v4.5h-4.5"/>',
+    change:'<path d="M4 7h11l-3-3M20 17H9l3 3"/>',
+    userplus:'<circle cx="10" cy="8" r="3.6"/><path d="M2.5 20.5c.8-4 3.8-6 7.5-6 1.4 0 2.6.3 3.7.8"/><path d="M19 13v6M16 16h6"/>',
+    userminus:'<circle cx="10" cy="8" r="3.6"/><path d="M2.5 20.5c.8-4 3.8-6 7.5-6 1.4 0 2.6.3 3.7.8"/><path d="M16 16h6"/>',
+    groupplus:'<circle cx="8" cy="8.5" r="3"/><path d="M2 19.5c.5-3.3 3-5 6-5s5.5 1.7 6 5"/><path d="M14 5.8a2.8 2.8 0 0 1 0 5.4"/><path d="M19.5 12.5v6M16.5 15.5h6"/>',
+    groupminus:'<circle cx="8" cy="8.5" r="3"/><path d="M2 19.5c.5-3.3 3-5 6-5s5.5 1.7 6 5"/><path d="M14 5.8a2.8 2.8 0 0 1 0 5.4"/><path d="M16.5 15.5h6"/>',
+    admin:'<circle cx="10" cy="8.5" r="3.4"/><path d="M3 20.5c.8-3.8 3.6-5.7 7-5.7 1.3 0 2.5.3 3.5.8"/><path d="m18 12.5.9 1.9 2.1.3-1.5 1.5.4 2.1-1.9-1-1.9 1 .4-2.1-1.5-1.5 2.1-.3z"/>'
+  };
+  function secSvg(name){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'+(SEC_ICO[name]||'')+'</svg>'; }
+  function sdi(name, tone){ return '<span class="sdi '+tone+'">'+secSvg(name)+'</span>'; }
+  // 상태 스트립 전용 컬러 아이콘(캡처: 노란 삼각·빨간 원·초록 방패) / status-strip colour icons (capture: amber triangle, red circle, green shield)
+  var SEC_ST_ICO = {
+    warn:'<span class="sd-stic"><svg viewBox="0 0 24 24"><path d="M12 3 2 20h20z" fill="#F59E0B"/><path d="M12 9.5v4.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="17" r="1.2" fill="#fff"/></svg></span>',
+    bad:'<span class="sd-stic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#E5484D"/><path d="m8.2 8.2 7.6 7.6M15.8 8.2l-7.6 7.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></span>',
+    ok:'<span class="sd-stic"><svg viewBox="0 0 24 24"><path d="M12 2.5 4 5.5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10v-6z" fill="none" stroke="#16A34A" stroke-width="2"/><circle cx="12" cy="12" r="4.3" fill="#16A34A"/><path d="m10 12 1.5 1.5 2.7-3" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>'
+  };
+  var SEC_BAN = '<svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="9.5" fill="#E5484D"/><path d="M7.5 12h9" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>';
+  var SEC_SEED = {
+    risky:[
+      {d:'2026-08-25', n:'Wilbert Clarence Setiawan', e:'demo-16ec4200b8@workspace.example'},
+      {d:'2026-08-24', n:'Wilbert Clarence Setiawan', e:'demo-16ec4200b8@workspace.example'},
+      {d:'2026-08-24', n:'Azure Partner', e:'demo-a856e50d30@workspace.example'},
+      {d:'2026-08-22', n:'Azure Partner', e:'demo-a856e50d30@workspace.example'},
+      {d:'2026-08-21', n:'Sophia Lee', e:'demo-89e94ee59b@workspace.example'}
+    ],
+    checks:{ user:['전역 관리자','게스트 관리자','역할 변경된 사용자'], auth:['사용자 액세스','암호가 만료되지 않도록 설정'], ops:['사용자 액세스'], log:['위험한 사용자','위험한 로그인'] },
+    users:{ total:304, member:217, guest:87 },
+    groups:{ total:216, m365:112, dist:34, sec:61, mail:9 },
+    services:[ ['office365',0,304,304], ['exchange',15,289,304], ['teams',33,271,304], ['oneDrive',13,291,304], ['sharePoint',14,290,304] ],
+    teams:[31,3,0,3],
+    exchange:{ used:'1.3TB', quota:[162,1,0,19], top:[ ['demo-b432c54173@workspace.example',100943], ['demo-23898dc74b@workspace.example',95414], ['demo-5101bbbfa8@workspace.example',94447], ['demo-399b18c676@workspace.example',90534], ['demo-699cfa9127@workspace.example',73339] ] },
+    changes:{ newUsers:25, delUsers:0, newGroups:3, delGroups:0 },
+    newUsers:[ ['2026-09-02','demo-57dcfded7a@workspace.example'] ],
+    delUsers:[],
+    admins:[ ['AI 365 관리자','demo-f52de200e4@workspace.example'] ],
+    tenant:{ company:'엠클라우드브리지', name:'MCloudBridge' },
+    summary:[
+      {h:'주요 이슈', t:'위험 로그인 사용자 3명이 탐지되었습니다.'},
+      {h:'라이선스', t:'Microsoft_365_Copilot 은 10/10 으로 전량 할당되었고, Dynamics 365 Partner Sandbox 2종은 70% 이상 사용 중입니다.'},
+      {h:'저장소', t:'OneDrive 3.3TB · SharePoint 2.7TB · Exchange 1.3TB 를 사용 중이며, 사서함 19개가 보내기/받기 금지 상태입니다.'},
+      {h:'사용자·그룹', t:'총 사용자 304명(구성원 217·게스트 87), 그룹 216개이며 최근 신규 사용자 25명이 추가되었습니다.'}
+    ],
+    licenses:[
+      ['AAD_PREMIUM_P2',100,0,100], ['CCIBOTS_PRIVPREV_VIRAL',9973,27,10000], ['CPC_E_8C_32GB_512GB',3,2,5],
+      ['DYN365_BUSINESS_MARKETING',9980,20,10000], ['DYN365_CUSTOMER_INSIGHTS_VIRAL',9980,20,10000], ['DYNAMICS_365_CONTACT_CENTER',35,0,35],
+      ['Dynamics_365_Customer_Service_Enterprise_viral_trial',9958,42,10000], ['Dynamics_365_Field_Service_Enterprise_viral_trial',9955,45,10000],
+      ['Dynamics_365_Operations_Application_Partner_Sandbox',9,41,50], ['Dynamics_365_Sales_Field_Service_and_Customer_Service_Partner_Sandbox',15,35,50],
+      ['Dynamics_365_Sales_Premium_Viral_Trial',9991,9,10000], ['FLOW_FREE',9892,108,10000], ['IDENTITY_THREAT_PROTECTION',100,0,100],
+      ['MDATP_XPLAT',100,0,100], ['Microsoft_365_Copilot',0,10,10], ['Microsoft_365_E3_(no_Teams)',66,34,100], ['Microsoft_365_E5_(no_Teams)',73,127,200],
+      ['Microsoft_Entra_Suite',50,0,50]
+    ],
+    onedrive:{ used:'3.3TB', stats:[162,53,1065591,2297], top:[ ['demo-85675d4846@workspace.example',252092], ['demo-d6f25187c6@workspace.example',186732], ['demo-5101bbbfa8@workspace.example',185180], ['demo-e15540c227@workspace.example',183752], ['demo-ea704b4ca7@workspace.example',168003] ] },
+    sharepoint:{ used:'2.7TB', stats:[144,41,226319,19383], top:[ ['Data&AI팀 소유자',825], ['Cloud Infra Team 소유자',164], ['ERPD365Developer 소유자',98], ['영업관리 소유자',81], ['YBK 소유자',81] ] }
+  };
+  var SEC = JSON.parse(JSON.stringify(SEC_SEED));
+  /* 서버 연동(2026-09-07): 부팅 때 GET /api/security/dashboard 로 시드를 대체하고(secLive), ⛔·↻ 는 서버에 기록한다.
+     Dashboard Summary 는 보안 화면을 처음 열 때 GET /summary?lang= 으로 LLM 생성본을 받는다(언어 토글에 반응, 실패 시 시드 요약).
+     정적 열람(file://)이나 서버 없음이면 위 시드로 그대로 동작한다. */
+  /* Server wiring (2026-09-07): at boot GET /api/security/dashboard replaces the seed (secLive); ⛔ / ↻ are recorded
+     server-side. Dashboard Summary is fetched on first open via GET /summary?lang= (LLM-written; follows the language
+     toggle; falls back to the seed summary). Static viewing (file://) or no server keeps the seed behaviour. */
+  var SEC_API='/api/security', secLive=false, secSumWanted=false;
+  function secLang(){ try{ return localStorage.getItem('ai365_lang')==='en' ? 'en' : 'ko'; }catch(e){ return 'ko'; } }
+  function secFetch(path, opts){ return fetch(SEC_API+path, opts).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }); }
+  function secLoad(){
+    secFetch('/dashboard').then(function(d){ SEC=d; secLive=true; secRender(); secSummaryLoad(); }).catch(function(){ secLive=false; });
+  }
+  function secSummaryLoad(){
+    if(!secLive || !secSumWanted) return;
+    var box=document.getElementById('secSummary');
+    box.innerHTML='<p class="sd-empty" style="text-align:left">요약 생성 중…</p>';
+    secFetch('/summary?lang='+secLang()).then(function(s){ if(s && s.items && s.items.length) SEC.summary=s.items; secRenderSummary(); })
+      .catch(function(){ secRenderSummary(); });
+  }
+  function secRenderSummary(){
+    document.getElementById('secSummary').innerHTML = SEC.summary.map(function(s){ return '<b>■ <span>'+esc(s.h)+'</span></b><p>'+esc(s.t)+'</p>'; }).join('');
+  }
+  function fmtN(n){ return typeof n==='number' ? n.toLocaleString('en-US') : esc(n); }
+  function secRows(id, rows, cell, emptyCols){
+    var el=document.getElementById(id); if(!el) return;
+    el.innerHTML = rows.length ? rows.map(cell).join('') : (emptyCols ? '<tr><td colspan="'+emptyCols+'" class="sd-empty">기록이 없습니다</td></tr>' : '');
+  }
+  function secMini(m){ return '<div>'+sdi(m[2], m[3])+'<div><div class="t">'+m[0]+'</div><b>'+fmtN(m[1])+'</b></div></div>'; }
+  // 상태 줄 문구 = Dev(securityAgent.status.*). 서버 응답은 key · tone 을 그대로 쓰고 보이는 글만 이 표로 그린다(2026-10-28)
+  // status strip wording = Dev (securityAgent.status.*); a server response keeps its key and tone and only the visible text comes from these tables (2026-10-28)
+  var SEC_ST_LB={overall:'전체 현황', risky:'위험 사용자/로그인', user:'사용자 관리', auth:'인증 관리', ops:'운영 관리', log:'로그 관리'};
+  var SEC_ST_V={ok:'안전', warn:'주의', bad:'검토 필요'};
+  function secStatus(){
+    if(SEC.status && SEC.status.length) return SEC.status.map(function(s){ return {lb:SEC_ST_LB[s.key]||s.lb, v:SEC_ST_V[s.tone]||s.v, tone:s.tone}; });   // 서버 취합 응답 우선 / server aggregate wins
+    var risky = SEC.risky.length>0;
+    return ['overall','risky','user','auth','ops','log'].map(function(k, i){
+      var tone = i===0 ? (risky?'warn':'ok') : i===1 ? (risky?'bad':'ok') : 'ok';
+      return {lb:SEC_ST_LB[k], v:SEC_ST_V[tone], tone:tone};
+    });
+  }
+  function secRender(){
+    var $=function(id){ return document.getElementById(id); };
+    $('secStatus').innerHTML = secStatus().map(function(s){ return '<div class="sd-st">'+SEC_ST_ICO[s.tone]+'<div><div class="lb">'+s.lb+'</div><div class="v '+s.tone+'">'+s.v+'</div></div></div>'; }).join('');
+    secRows('secRisky', SEC.risky, function(r,i){ return '<tr><td class="num">'+esc(r.d)+'</td><td title="'+esc(r.n)+'">'+esc(r.n)+'</td><td title="'+esc(r.e)+'">'+esc(r.e)+'</td><td><button class="sd-ban" data-risky="'+esc(r.id||String(i))+'" title="삭제">'+SEC_BAN+'</button></td></tr>'; }, 4);
+    [['secChkUser','user'],['secChkAuth','auth'],['secChkOps','ops'],['secChkLog','log']].forEach(function(p){
+      secRows(p[0], SEC.checks[p[1]], function(t){ return '<tr><td>'+esc(t)+'</td><td>문제 없음</td></tr>'; });
+    });
+    $('secUsersTotal').textContent = fmtN(SEC.users.total);
+    $('secUsersMini').innerHTML = [['구성원',SEC.users.member,'user','blue'],['게스트',SEC.users.guest,'user','orange']].map(secMini).join('');
+    $('secGroupsTotal').textContent = fmtN(SEC.groups.total);
+    $('secGroupsMini').innerHTML = [['M365 그룹',SEC.groups.m365,'grid','sky'],['배포 그룹',SEC.groups.dist,'mail','blue'],['보안 그룹',SEC.groups.sec,'shield','green'],['메일 그룹',SEC.groups.mail,'users','amber']].map(secMini).join('');
+    $('secChanges').innerHTML = [['신규 사용자',SEC.changes.newUsers,'userplus','blue'],['삭제된 사용자',SEC.changes.delUsers,'userminus','red'],['신규 그룹',SEC.changes.newGroups,'groupplus','green'],['삭제된 그룹',SEC.changes.delGroups,'groupminus','red']].map(secMini).join('');
+    secRows('secNewUsers', SEC.newUsers, function(r){ return '<tr><td class="num">'+esc(r[0])+'</td><td class="l" title="'+esc(r[1])+'">'+esc(r[1])+'</td></tr>'; }, 2);
+    secRows('secDelUsers', SEC.delUsers, function(r){ return '<tr><td class="num">'+esc(r[0])+'</td><td class="num">'+esc(r[1])+'</td><td>'+esc(r[2])+'</td></tr>'; }, 3);
+    secRows('secAdmins', SEC.admins, function(r){ return '<tr><td>'+esc(r[0])+'</td><td title="'+esc(r[1])+'">'+esc(r[1])+'</td></tr>'; }, 2);
+    secRows('secSvc', SEC.services, function(r){ return '<tr><td>'+esc(r[0])+'</td><td class="num">'+fmtN(r[1])+'</td><td class="num">'+fmtN(r[2])+'</td><td class="num">'+fmtN(r[3])+'</td></tr>'; });
+    $('secTeams').innerHTML = '<tr>'+SEC.teams.map(function(v){ return '<td class="num">'+fmtN(v)+'</td>'; }).join('')+'</tr>';
+    $('secExUsed').textContent = SEC.exchange.used;
+    $('secExQuota').innerHTML = '<tr>'+SEC.exchange.quota.map(function(v){ return '<td class="num">'+fmtN(v)+'</td>'; }).join('')+'</tr>';
+    secRows('secExTop', SEC.exchange.top, function(r){ return '<tr><td class="l" title="'+esc(r[0])+'">'+esc(r[0])+'</td><td class="num">'+fmtN(r[1])+'</td><td>정상</td></tr>'; }, 3);
+    secRenderSummary();
+    $('secCompany').textContent = SEC.tenant.company; $('secTenant').textContent = SEC.tenant.name;
+    secRows('secLic', SEC.licenses, function(r){
+      var pct = r[3] ? Math.min(100, Math.round(r[2]/r[3]*100)) : 0;
+      return '<tr><td class="l"><span class="lic-nm"><span class="lic-ic"></span><span title="'+esc(r[0])+'">'+esc(r[0])+'</span></span></td><td class="num">'+fmtN(r[1])+'</td><td class="l"><span class="lic-bar"><span class="lic-track"><span class="lic-fill" style="width:'+pct+'%"></span></span><span class="num">'+fmtN(r[2])+'/'+fmtN(r[3])+'</span></span></td></tr>';
+    });
+    $('secOdUsed').textContent = SEC.onedrive.used; $('secSpUsed').textContent = SEC.sharepoint.used;
+    // 숫자 4개는 이름표와 한 쌍씩 — 카드 너비에 따라 4칸 한 줄 또는 2칸 두 줄(.sd-kv) / four label-number pairs; one row of four or two rows of two by card width
+    var KV4=['전체 계정','활성 계정','전체 파일','활성 파일'];
+    function kv4(stats){ return stats.map(function(v,i){ return '<div><span class="h">'+KV4[i]+'</span><span class="v">'+fmtN(v)+'</span></div>'; }).join(''); }
+    $('secOd').innerHTML = kv4(SEC.onedrive.stats);
+    $('secSp').innerHTML = kv4(SEC.sharepoint.stats);
+    secRows('secOdTop', SEC.onedrive.top, function(r){ return '<tr><td class="l" title="'+esc(r[0])+'">'+esc(r[0])+'</td><td class="num">'+fmtN(r[1])+'</td></tr>'; }, 2);
+    secRows('secSpTop', SEC.sharepoint.top, function(r){ return '<tr><td class="l" title="'+esc(r[0])+'">'+esc(r[0])+'</td><td class="num">'+fmtN(r[1])+'</td></tr>'; }, 2);
+  }
+  (function secInit(){
+    var root=document.getElementById('secDash'); if(!root) return;
+    root.querySelectorAll('[data-ico]').forEach(function(el){ el.innerHTML = secSvg(el.dataset.ico); });
+    secRender();
+    root.addEventListener('click', function(e){
+      var del=e.target.closest('[data-risky]');
+      if(del){
+        var key=del.dataset.risky;
+        if(secLive){
+          secFetch('/risky-signins/'+encodeURIComponent(key)+'/dismiss', {method:'POST'})
+            .then(function(d){ SEC=d; secRender(); toast('위험 로그인 기록이 삭제되었습니다'); secSummaryLoad(); })
+            .catch(function(){ toast('삭제에 실패했습니다'); });
+        } else { SEC.risky.splice(+key, 1); secRender(); toast('위험 로그인 기록이 삭제되었습니다'); }
+        return;
+      }
+      if(e.target.closest('#secRefresh')){
+        if(secLive){
+          secFetch('/refresh', {method:'POST'})
+            .then(function(d){ SEC=d; secRender(); toast('새로고침되었습니다'); secSummaryLoad(); })
+            .catch(function(){ toast('새로고침에 실패했습니다'); });
+        } else { SEC = JSON.parse(JSON.stringify(SEC_SEED)); secRender(); toast('새로고침되었습니다'); }
+      }
+    });
+    secLoad();
+    // 부모 앱의 KO/EN 토글 → 요약을 해당 언어로 다시 생성(동일 출처 storage 이벤트) / parent KO/EN toggle → regenerate the summary in that language
+    window.addEventListener('storage', function(e){ if(e.key==='ai365_lang') secSummaryLoad(); });
+  })();
+
+  /* ── 전자결재 탭(2026-09-18 캡처 기준, 2026-10-28 Dev 원본 정렬): 데모 시드 EA_SEED 한 곳에서 지표 · 탭 개수 · 목록 · 쪽 넘김 · 최근 양식을
+     그린다(API 없음). 연동 시 교체 지점: 지표 = 상태별 건수 조회, docs = 결재 문서 목록 조회, forms = 최근 작성한 양식 조회.
+     Dev(ApprovalTable · SummaryCards)처럼 탭 개수 = 그 탭의 문서 수(0이면 숨김), 제목 앞 점 = 결재할 문서, 10개씩 쪽 넘김(탭을 바꾸면 1쪽),
+     지표 칸을 누르면 그 탭으로 간다. 문서 행 · 새 문서 작성 · 양식 클릭은 연동 전이라 안내 토스트만 띄운다. ── */
+  /* ── e-Approval tab (per the 2026-09-18 capture; Dev original alignment 2026-10-28): KPI figures, tab counts, the list, its pages and the
+     recent forms all render from the EA_SEED demo seed (no API). Swap points for the integration: KPIs = count lookup, docs = approval list
+     lookup, forms = recent forms lookup. As in Dev (ApprovalTable, SummaryCards) a tab count is the documents in that tab (hidden at 0), the
+     dot before a title marks a document to approve, the list pages by 10 (a tab change goes back to page 1) and a KPI card opens its tab.
+     Row, New document and form clicks only show a notice toast until the integration provides the URLs. ── */
+  (function(){
+    var root=document.getElementById('eappDash'); if(!root) return;
+    // 상태 · 탭 문구 = Dev(eApproval/language/ko.json), 탭 순서 = Dev / status and tab wording and the tab order follow Dev
+    var EA_ST={pending:'결재 대기', progress:'진행 중', done:'완료', rejected:'반려 문서'};
+    var EA_TABS=[['all','전체'],['pending','결재할 문서'],['progress','진행중 문서'],['done','완료 문서'],['rejected','반려 문서']];
+    var EA_PAGE=10;   // 쪽당 10개(Dev ApprovalTable PAGE_SIZE) / ten a page (Dev ApprovalTable PAGE_SIZE)
+    var EA_SEED={
+      forms:['법인/개인 경비 신청서','지출결의서','거래 의뢰서','신규 채용 기안서'],
+      // [문서 제목, 기안자, 부서, 요청일(ISO), 상태, 읽지 않음(연동 대비, 지금은 표시하지 않음)] 요청일 내림차순 / [title, drafter, department, requested (ISO), status, unread (kept for the integration, not shown now)], newest first
+      docs:[
+        ['조직개편 인사 발령 안','김지수','인사팀','2026-07-09','pending',1],
+        ['신규 채용 기안서','김지수','경영지원팀','2026-07-09','done',1],
+        ['근태신청 (7/6, 연차)','박연진','인사팀','2026-07-09','done',1],
+        ['데모존 배치 리플렛 제작 비용의 건','김지수','마케팅팀','2026-07-09','pending',0],
+        ['부스 이벤트 제작 비용의 건','김지수','마케팅팀','2026-07-09','pending',0],
+        ['서베이 광고','김지수','마케팅팀','2026-07-09','pending',0],
+        ['근태신청','김지수','인사팀','2026-07-09','pending',0],
+        ['2026 하반기 마케팅 예산 조정의 건','김지수','마케팅팀','2026-07-09','pending',0],
+        ['클라우드 인프라 증설 구매 품의','이도윤','개발팀','2026-07-08','progress',0],
+        ['3분기 영업 목표 조정 보고','최서연','영업팀','2026-07-08','progress',0],
+        ['법인카드 사용 내역 정산 (6월)','박연진','경영지원팀','2026-07-08','done',0],
+        ['외부 교육 수강 신청 (AWS 아키텍트)','정하준','개발팀','2026-07-08','pending',0],
+        ['고객사 방문 출장 신청 (부산)','최서연','영업팀','2026-07-08','progress',0],
+        ['사무용품 구매 요청','박연진','경영지원팀','2026-07-08','done',0],
+        ['신규 파트너 계약 체결의 건','최서연','영업팀','2026-07-07','progress',0],
+        ['웨비나 운영 대행 견적 승인','김지수','마케팅팀','2026-07-07','rejected',0],
+        ['재택근무 신청 (7/14~7/18)','정하준','개발팀','2026-07-07','pending',0],
+        ['보안 점검 도구 라이선스 갱신','이도윤','개발팀','2026-07-07','progress',0],
+        ['경력직 채용 최종 합격 품의','한소희','인사팀','2026-07-07','done',0],
+        ['하계 워크숍 장소 대관 비용의 건','한소희','인사팀','2026-07-07','progress',0],
+        ['거래처 대금 지급 요청 (6월분)','박연진','경영지원팀','2026-07-06','done',0],
+        ['홈페이지 개편 외주 계약의 건','김지수','마케팅팀','2026-07-06','progress',0],
+        ['연장근로 사전 승인 신청','정하준','개발팀','2026-07-06','pending',0],
+        ['Microsoft 365 라이선스 추가 구매','이도윤','개발팀','2026-07-06','progress',0],
+        ['전시회 참가 부스 디자인 변경','김지수','마케팅팀','2026-07-06','rejected',0],
+        ['2분기 성과급 지급 기안','한소희','인사팀','2026-07-03','done',0],
+        ['신규 고객사 견적 할인 승인','최서연','영업팀','2026-07-03','progress',0],
+        ['개발 서버 노후 장비 교체 품의','이도윤','개발팀','2026-07-03','pending',0],
+        ['휴가 신청 (7/20~7/22)','최서연','영업팀','2026-07-03','pending',0],
+        ['법인 차량 정기 점검 비용','박연진','경영지원팀','2026-07-03','done',0],
+        ['프로모션 경품 구매 요청','김지수','마케팅팀','2026-07-02','rejected',0],
+        ['AI 서비스 PoC 비용 집행의 건','이도윤','개발팀','2026-07-02','progress',0],
+        ['인턴 채용 계획 기안','한소희','인사팀','2026-07-02','progress',0],
+        ['사내 동호회 지원금 신청','정하준','개발팀','2026-07-02','done',0],
+        ['하반기 교육 훈련 계획 승인','한소희','인사팀','2026-07-01','progress',0],
+        ['출장비 정산 (6월 대전)','최서연','영업팀','2026-07-01','done',0],
+        ['데이터 분석 도구 구독 연장','이도윤','개발팀','2026-07-01','pending',0],
+        ['협력사 접대비 사후 승인 요청','최서연','영업팀','2026-07-01','rejected',0]
+      ]
+    };
+    var EA_IC={
+      form:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>',
+      chev:'<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>',
+      prev:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>',
+      next:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>'
+    };
+    var eaTab='all', eaPage=1;
+    function eaDocs(k){ return EA_SEED.docs.filter(function(d){ return k==='all' || d[4]===k; }); }
+    function eaDay(iso){ return iso.slice(5,7)+'/'+iso.slice(8,10); }
+    function eaRender(){
+      ['pending','progress','done','rejected'].forEach(function(k){ setTx('eaCnt_'+k, String(eaDocs(k).length)); });
+      document.getElementById('eaTabs').innerHTML=EA_TABS.map(function(t){
+        var n=eaDocs(t[0]).length;
+        return '<button type="button" class="ea-tab'+(t[0]===eaTab?' on':'')+'" data-eatab="'+t[0]+'" role="tab" aria-selected="'+(t[0]===eaTab)+'"><span>'+t[1]+'</span>'
+          +(n?'<span class="ea-bdg">'+n+'</span>':'')+'</button>';
+      }).join('');
+      var all=eaDocs(eaTab), pages=Math.max(1, Math.ceil(all.length/EA_PAGE));
+      if(eaPage>pages) eaPage=pages;
+      var rows=all.slice((eaPage-1)*EA_PAGE, eaPage*EA_PAGE);
+      document.getElementById('eaRows').innerHTML=rows.length ? rows.map(function(d){
+        return '<tr data-eadoc="1"><td title="'+esc(d[0])+'"><span class="ea-ttl">'+(d[4]==='pending'?'<span class="ea-dot"></span>':'')+'<span>'+esc(d[0])+'</span></span></td>'
+          +'<td>'+esc(d[1])+'</td><td>'+esc(d[2])+'</td><td class="num">'+eaDay(d[3])+'</td>'
+          +'<td class="c"><span class="ea-pill '+d[4]+'">'+EA_ST[d[4]]+'</span></td></tr>';
+      }).join('') : '<tr class="ea-none"><td colspan="5"><span>결재 문서가 없습니다.</span><span>새 문서 작성 버튼을 통해 결재를 시작해 보세요.</span></td></tr>';
+      var pg='';
+      if(pages>1){
+        pg='<button type="button" class="ea-pg-nav" data-eapg="prev"'+(eaPage===1?' disabled':'')+'>'+EA_IC.prev+'</button>';
+        for(var i=1;i<=pages;i++) pg+='<button type="button" class="ea-pg'+(i===eaPage?' on':'')+'" data-eapg="'+i+'">'+i+'</button>';
+        pg+='<button type="button" class="ea-pg-nav" data-eapg="next"'+(eaPage===pages?' disabled':'')+'>'+EA_IC.next+'</button>';
+      }
+      document.getElementById('eaPager').innerHTML=pg;
+      var wrap=root.querySelector('.ea-tbwrap'); if(wrap) wrap.scrollTop=0;
+    }
+    document.getElementById('eaForms').innerHTML=EA_SEED.forms.map(function(f){
+      return '<button type="button" class="ea-form" data-eaform="1">'+EA_IC.form+'<span class="nm">'+esc(f)+'</span>'+EA_IC.chev+'</button>';
+    }).join('');
+    eaRender();
+    root.addEventListener('click', function(e){
+      var tb=e.target.closest('[data-eatab]');
+      if(tb){ eaTab=tb.dataset.eatab; eaPage=1; eaRender(); return; }
+      var kp=e.target.closest('.ea-kpi');   // 지표 칸 = 그 탭으로(Dev SummaryCards onCardClick) / a KPI card opens its tab (Dev SummaryCards onCardClick)
+      if(kp){ eaTab=kp.dataset.ea; eaPage=1; eaRender(); return; }
+      var pb=e.target.closest('[data-eapg]');
+      if(pb){ var v=pb.dataset.eapg; eaPage = v==='prev' ? eaPage-1 : v==='next' ? eaPage+1 : +v; eaRender(); return; }
+      if(e.target.closest('[data-eadoc],[data-eaform],#eaNew')) toast('전자결재 연동 후 이용할 수 있습니다');
+    });
+  })();
+
+  /* 에이전트 전환(2026-09-04): 진입 경로는 부모(adapter)가 postMessage {type:'ai365-home-entry', entry:'tab'|'resource'}
+     로 알리고, 첫 로드는 ?entry=tab 쿼리로도 받는다. 'tab' 이면 세그먼트 표시, 'resource' 면 숨기고 그룹웨어로 되돌린다.
+     보안 에이전트 선택은 제목·부제를 바꾸고 body.sec-on 으로 보안 대시보드(#secDash)를 보인다(2026-09-07).
+     전자결재 선택은 body.eapp-on 으로 전자결재 화면(#eappDash)을 보인다(2026-09-18, 데모 시드). */
+  /* Agent switch (2026-09-04): the parent (adapter) announces the entry via postMessage
+     {type:'ai365-home-entry', entry:'tab'|'resource'}; the first load also accepts ?entry=tab. 'tab' shows the
+     segment, 'resource' hides it and returns to Groupware. Selecting Security Agent swaps the title/subtitle and shows
+     the security dashboard (#secDash) via body.sec-on (2026-09-07). Selecting e-Approval shows the e-Approval
+     screen (#eappDash) via body.eapp-on (2026-09-18, demo seed). */
+  (function(){
+    var seg=document.getElementById('agentSeg'); if(!seg) return;
+    function setSeg(k){
+      var sec = k==='sec', eapp = k==='eapp';
+      seg.querySelectorAll('.seg-btn').forEach(function(b){ b.classList.toggle('on', b.dataset.seg===k); });
+      document.body.classList.toggle('sec-on', sec);
+      document.body.classList.toggle('eapp-on', eapp);   // 전자결재 화면(2026-09-18) / e-Approval screen
+      var label = sec ? '보안 에이전트' : eapp ? '전자결재' : '그룹웨어 에이전트';
+      setTx('homeTitle', label); setTx('crumbLast', label);
+      setTx('homeSub', sec ? '조직의 보안 현황과 위험 요소를 한눈에 확인하세요.'
+        : eapp ? '전자결재는 결재 요청부터 승인 현황까지 한눈에 관리하세요.'
+        : '중요한 알림과 업무 현황을 한눈에 확인하세요.');
+      // 다른 화면으로 가면 위젯 에이전트 패널을 닫는다(static/widget_agent.js 가 듣는다) / leaving for another screen closes the widget agent panel (static/widget_agent.js listens)
+      try{ document.dispatchEvent(new CustomEvent('ai365-home-seg', { detail: { seg: k } })); }catch(e){}
+      var hero=document.querySelector('.hero'); if(hero) hero.scrollTop=0;
+      // 보안 화면을 처음 열 때 LLM 요약 요청(이후 언어 토글·⛔·↻ 에서 재생성) / first open of the security screen requests the LLM summary
+      if(sec && !secSumWanted){ secSumWanted=true; secSummaryLoad(); }
+    }
+    function setEntry(entry){
+      document.body.classList.toggle('entry-tab', entry==='tab');
+      if(entry!=='tab') setSeg('gw');
+    }
+    seg.addEventListener('click', function(e){ var b=e.target.closest('.seg-btn'); if(b) setSeg(b.dataset.seg); });
+    // view(2026-09-07): 리소스 센터 '보안 에이전트' 카드 = entry resource + view 'sec' → 세그먼트 없이 보안 화면만
+    // view (2026-09-07): the Resource Center 'Security Agent' card = entry resource + view 'sec' → security screen without the segment
+    window.addEventListener('message', function(e){
+      var d=e.data||{}; if(!d || d.type!=='ai365-home-entry') return;
+      setEntry(d.entry==='tab' ? 'tab' : 'resource');
+      if(d.view==='sec') setSeg('sec');
+    });
+    try{
+      var qs=new URLSearchParams(location.search);
+      if(qs.get('entry')==='tab') setEntry('tab');
+      if(qs.get('view')==='sec') setSeg('sec');
+    }catch(e){}
+  })();
+
+})();
+</script>
+</body>
+</html>

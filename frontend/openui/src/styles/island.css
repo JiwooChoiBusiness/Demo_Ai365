@@ -1,0 +1,1410 @@
+/* 섬 CSS: Figma AI365 Design System(2026-10-28, docs/figma-design-system-spec.md 6 · 7절, 사용자 지시 "모두 디자인 시스템대로")을
+   섬에 입힌다. ① adapter.js ai365DsTokens 와 같은 이름 · 같은 값의 --ds-* 토큰을 섬 범위에 두고 ② OpenUI 토큰(--openui-*)을 DS 토큰으로
+   잇고 ③ 컴포넌트 모양을 DS 로 맞춘다: 버튼 = 제품 시트 답변 카드 동작(알약, DS 크기 S 24 · M 32 · L 40, DS 상태 단계), 태그 = DS Badge r4 틴트,
+   Callout = DS 메시지 바(정보 = 회색 · 성공 · 경고 · 오류), 표 = DS DataGrid(머리 채움 · 줄무늬 · 바깥 선 없음), 입력 · 셀렉트 = DS Outline
+   입력(r8 · 32, 포커스 = 아래 2px 브랜드), 목록 = DS 목록(r8 · Shadow 16), 출처 띠 · 후속 질문 · Stat · 패널 = DS 카드 · 메뉴 규칙,
+   본문 인용 = 예전 채팅 답의 위첨자 번호 칩(adapter .ai365-fn 값, 2026-10-29),
+   글자 = DS 글자 단계(채팅 답 본문과 같은 Body 2, 500 → 400, 800 → 700, 자간 0). 차트 · 출처 종류(데이터 보라 · 그룹웨어 파랑) 같은 데이터 색은 그대로.
+   모든 규칙은 .ai365-oui(섬) · .ai365-oui-portal(섬의 포털) 안에서만 맞는다(@font-face 는 두지 않는다 — 글꼴은 호스트 화면이 싣는다).
+   빌드의 PostCSS 단계(build/cssScope.ts)는 react-ui CSS 에만 걸리므로 이 파일은 직접 범위를 적는다.
+   The island CSS applies the Figma AI365 Design System (2026-10-28, sections 6 and 7 of docs/figma-design-system-spec.md; the
+   user's "apply the design system everywhere"). (1) The --ds-* tokens, same names and values as adapter.js's ai365DsTokens,
+   live in the island scope; (2) the OpenUI tokens (--openui-*) point at them; (3) component shapes follow the DS: buttons are
+   the product sheet's answer-card actions (pills, DS sizes S 24, M 32, L 40, DS state steps), tags are DS r4 tint badges,
+   callouts are DS message bars (info = grey, success, warning, error), tables are a DS DataGrid (no header fill, stripes or
+   outer stroke), inputs and selects are DS Outline inputs (r8, 32; focus = a 2px brand bottom bar), lists follow the DS listbox
+   (r8, Shadow 16), the sources strip, follow-ups, stats and panels follow the DS card and menu rules, inline citations are the
+   superscript number chips of earlier chat answers (the adapter's .ai365-fn values, 2026-10-29), and text follows
+   the DS type ramp (Body 2 like the chat answer body; 500 → 400, 800 → 700; no tracking). Data colours (charts, the data purple
+   and groupware blue source kinds) stay. Every rule matches only inside .ai365-oui (the island) or .ai365-oui-portal (its
+   portals); there is no @font-face (the host page loads the font). The build's PostCSS step (build/cssScope.ts) runs on
+   react-ui's CSS only, so this file writes its scope itself. */
+
+/* ============================================================
+   DS 토큰(adapter.js ai365DsTokens 와 같은 이름 · 같은 값) / DS tokens (same names and values as adapter.js's ai365DsTokens)
+   ============================================================ */
+.ai365-oui,
+.ai365-oui-portal {
+  --ds-white: #ffffff;
+  --ds-brand-80: #4450ce;
+  --ds-brand-100: #6174f5;
+  --ds-brand-110: #7186ff;
+  --ds-brand-140: #b4c6ff;
+  --ds-brand-160: #e4edff;
+  --ds-brand-170: #f2f6ff;
+  --ds-grey-66: #a4a8b2;
+  --ds-grey-90: #e2e6f1;
+
+  --ds-fg-1: #21242c;
+  --ds-fg-2: #3e424b;
+  --ds-fg-2-hover: #21242c;
+  --ds-fg-2-pressed: #21242c;
+  --ds-fg-2-brand-hover: #4450ce;
+  --ds-fg-2-brand-pressed: #3940bd;
+  --ds-fg-3: #5d616a;
+  --ds-fg-4: #6c707a;
+  --ds-fg-disabled: #b9bdc8;
+  --ds-fg-on-brand: #ffffff;
+  --ds-fg-link: #3940bd;
+  --ds-fg-brand-1: #4450ce;
+  --ds-fg-brand-2: #3940bd;
+  --ds-fg-brand-2-hover: #2e2fac;
+  --ds-compound-brand: #4450ce;
+  --ds-compound-brand-hover: #3940bd;
+  --ds-compound-brand-pressed: #2e2fac;
+  --ds-bg-1: #ffffff;
+  --ds-bg-1-hover: #f6f8fd;
+  --ds-bg-1-pressed: #dce0eb;
+  --ds-bg-1-selected: #e7ebf6;
+  --ds-bg-2: #fafcff;
+  --ds-bg-3: #f6f8fd;
+  --ds-bg-3-hover: #e7ebf6;
+  --ds-bg-4: #eff2fa;
+  --ds-bg-5: #e7ebf6;
+  --ds-bg-disabled: #eff2fa;
+  --ds-bg-inverted: #262931;
+  --ds-subtle-bg-hover: #f6f8fd;
+  --ds-subtle-bg-pressed: #dce0eb;
+  --ds-subtle-bg-selected: #e7ebf6;
+  --ds-brand-bg: #4450ce;
+  --ds-brand-bg-hover: #3940bd;
+  --ds-brand-bg-pressed: #1d008b;
+  --ds-brand-bg-2: #e4edff;
+  --ds-brand-bg-2-hover: #ccdaff;
+  --ds-stroke-1: #cdd1dc;
+  --ds-stroke-1-hover: #c3c7d2;
+  --ds-stroke-1-pressed: #afb3be;
+  --ds-stroke-2: #dce0eb;
+  --ds-stroke-accessible: #5d616a;
+  --ds-stroke-accessible-hover: #535760;
+  --ds-stroke-disabled: #dce0eb;
+  --ds-brand-stroke-2: #b4c6ff;
+  --ds-success-fg-1: #0e700e;
+  --ds-success-bg-1: #f1faf1;
+  --ds-success-bg-3: #359b35;
+  --ds-success-border-1: #9fd89f;
+  --ds-warning-fg-1: #bc4b09;
+  --ds-warning-fg-2: #8a3707;
+  --ds-warning-bg-1: #fff9f5;
+  --ds-warning-bg-3: #f87528;
+  --ds-warning-border-1: #fdcfb4;
+  --ds-danger-fg-1: #c50f1f;
+  --ds-danger-bg-1: #fdf3f4;
+  --ds-danger-bg-3: #cc2635;
+  --ds-danger-border-1: #eeacb2;
+  --ds-danger-border-2: #c50f1f;
+  --ds-info-fg: #5d616a;
+  --ds-info-bg: #f6f8fd;
+  --ds-info-border: #cdd1dc;
+
+  --ds-shadow-2: 0 0 2px #1513520f, 0 1px 2px #15135224;
+  --ds-shadow-4: 0 0 2px #1513520f, 0 2px 4px #15135224;
+  --ds-shadow-8: 0 0 2px #1513520f, 0 4px 8px #15135224;
+  --ds-shadow-16: 0 0 2px #1513520f, 0 8px 16px #15135224;
+  --ds-shadow-28: 0 0 8px #1513521f, 0 14px 28px #1513523d;
+  --ds-shadow-64: 0 0 8px #1513521f, 0 32px 64px #1513523d;
+  --ds-focus-ring: 0 0 0 1px #ffffff, 0 0 0 3px #000000;
+
+  --ds-font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  --ds-type-caption-2: 400 10px/14px var(--ds-font-family);
+  --ds-type-caption-2-strong: 600 10px/14px var(--ds-font-family);
+  --ds-type-caption-1: 400 12px/16px var(--ds-font-family);
+  --ds-type-caption-1-strong: 600 12px/16px var(--ds-font-family);
+  --ds-type-body-1: 400 14px/20px var(--ds-font-family);
+  --ds-type-body-1-strong: 600 14px/20px var(--ds-font-family);
+  --ds-type-body-2: 400 16px/22px var(--ds-font-family);
+  --ds-type-subtitle-2: 600 16px/22px var(--ds-font-family);
+  --ds-type-subtitle-1: 600 20px/28px var(--ds-font-family);
+  --ds-type-title-3: 400 24px/32px var(--ds-font-family);
+  --ds-type-title-2: 600 28px/36px var(--ds-font-family);
+  --ds-type-title-1: 600 32px/40px var(--ds-font-family);
+
+  --ds-radius-2: 2px;
+  --ds-radius-4: 4px;
+  --ds-radius-6: 6px;
+  --ds-radius-8: 8px;
+  --ds-radius-12: 12px;
+  --ds-radius-16: 16px;
+  --ds-radius-full: 9999px;
+  --ds-radius-input: 8px;
+  --ds-radius-card: 8px;
+  --ds-radius-listbox: 8px;
+  --ds-radius-badge: 4px;
+  --ds-radius-tag: 8px;
+  --ds-radius-menu: 12px;
+  --ds-radius-menu-item: 6px;
+  --ds-radius-message-bar: 8px;
+  --ds-radius-checkbox: 2px;
+  --ds-radius-product-card: 16px;
+}
+
+/* ============================================================
+   OpenUI 토큰 → DS 토큰 / OpenUI tokens → DS tokens (밝은 테마 고정 / light theme only)
+   ============================================================ */
+.ai365-oui,
+.ai365-oui-portal {
+  /* 호스트 본문 글꼴(Pretendard) = DS 글꼴 / the host body font (Pretendard) = the DS font */
+  --ai365-oui-font: var(--ds-font-family);
+
+  --openui-background: var(--ds-bg-1);
+  --openui-foreground: var(--ds-bg-1);
+  --openui-popover-background: var(--ds-bg-1);
+  --openui-sunk-light: var(--ds-bg-2);
+  --openui-sunk: var(--ds-bg-3);
+  --openui-sunk-deep: var(--ds-bg-4);
+  --openui-elevated-light: rgba(33, 36, 44, 0.04);
+  --openui-elevated: rgba(33, 36, 44, 0.08);
+  --openui-elevated-strong: rgba(33, 36, 44, 0.16);
+  --openui-elevated-intense: rgba(33, 36, 44, 0.32);
+  --openui-overlay: rgba(0, 0, 0, 0.5);
+  --openui-highlight-subtle: var(--ds-bg-2);
+  --openui-highlight: var(--ds-bg-1-hover);
+  --openui-highlight-strong: var(--ds-bg-5);
+  --openui-highlight-intense: var(--ds-stroke-2);
+  --openui-inverted-background: var(--ds-bg-inverted);
+  /* 정보 = DS 회색(메시지 바 정보), 성공 · 경고 · 위험 = DS 연한 바탕 / info = the DS grey (message-bar info); success, warning, danger = the DS light grounds */
+  --openui-info-background: var(--ds-info-bg);
+  --openui-success-background: var(--ds-success-bg-1);
+  --openui-alert-background: var(--ds-warning-bg-1);
+  --openui-danger-background: var(--ds-danger-bg-1);
+
+  --openui-text-neutral-primary: var(--ds-fg-1);
+  --openui-text-neutral-secondary: var(--ds-fg-3);
+  --openui-text-neutral-tertiary: var(--ds-fg-disabled);
+  --openui-text-neutral-link: var(--ds-fg-link);
+  --openui-text-brand: var(--ds-fg-brand-1);
+  --openui-text-accent-primary: var(--ds-fg-on-brand);
+  --openui-text-success-primary: var(--ds-success-fg-1);
+  --openui-text-alert-primary: var(--ds-warning-fg-2);
+  --openui-text-danger-primary: var(--ds-danger-fg-1);
+  --openui-text-info-primary: var(--ds-info-fg);
+
+  --openui-interactive-accent-default: var(--ds-brand-bg);
+  --openui-interactive-accent-hover: var(--ds-brand-bg-hover);
+  --openui-interactive-accent-pressed: var(--ds-brand-bg-pressed);
+  --openui-interactive-accent-disabled: var(--ds-bg-disabled);
+  --openui-interactive-destructive-accent-default: var(--ds-danger-bg-3);
+
+  --openui-border-default: var(--ds-stroke-2);
+  --openui-border-interactive: var(--ds-stroke-1);
+  --openui-border-interactive-emphasis: var(--ds-stroke-accessible);
+  --openui-border-interactive-selected: var(--ds-compound-brand);
+  --openui-border-accent: transparent;
+  --openui-border-accent-emphasis: var(--ds-brand-stroke-2);
+  --openui-border-info: var(--ds-info-border);
+  --openui-border-info-emphasis: var(--ds-info-fg);
+  --openui-border-success: var(--ds-success-border-1);
+  --openui-border-success-emphasis: var(--ds-success-fg-1);
+  --openui-border-alert: var(--ds-warning-border-1);
+  --openui-border-alert-emphasis: var(--ds-warning-fg-1);
+  --openui-border-danger: var(--ds-danger-border-1);
+  --openui-border-danger-emphasis: var(--ds-danger-border-2);
+
+  /* 그림자 = DS 단계(#151352 섞임): 작은 표면 02/04, 팝오버 · 툴팁 16, 큰 띄움 28/64 / shadows = the DS steps */
+  --openui-shadow-s: var(--ds-shadow-2);
+  --openui-shadow-m: var(--ds-shadow-4);
+  --openui-shadow-l: var(--ds-shadow-16);
+  --openui-shadow-xl: var(--ds-shadow-16);
+  --openui-shadow-2xl: var(--ds-shadow-28);
+  --openui-shadow-3xl: var(--ds-shadow-64);
+
+  /* 글자 = DS 글자 단계(본문 Body 2 = 채팅 답 본문, 작은 글 Body 1 · Caption 1, 제목 Subtitle) · 굵기 400/600/700 · 자간 0 /
+     text = the DS type ramp (Body 2 like the chat answer body; Body 1 and Caption 1 for small text; Subtitles for headings); weights 400/600/700; no tracking */
+  --openui-font-weight-regular: 400;
+  --openui-font-weight-medium: 400;
+  --openui-font-weight-bold: 600;
+  --openui-font-weight-heavy: 700;
+  --openui-text-body-xs: var(--ds-type-caption-1);
+  --openui-text-body-xs-heavy: var(--ds-type-caption-1-strong);
+  --openui-text-body-sm: var(--ds-type-body-1);
+  --openui-text-body-sm-heavy: var(--ds-type-body-1-strong);
+  --openui-text-body-default: var(--ds-type-body-2);
+  --openui-text-body-default-heavy: var(--ds-type-subtitle-2);
+  --openui-text-body-lg: var(--ds-type-body-2);
+  --openui-text-body-lg-heavy: var(--ds-type-subtitle-2);
+  --openui-text-label-xs: var(--ds-type-caption-1);
+  --openui-text-label-xs-heavy: var(--ds-type-caption-1-strong);
+  --openui-text-label-sm: var(--ds-type-body-1);
+  --openui-text-label-sm-heavy: var(--ds-type-body-1-strong);
+  --openui-text-label-default: var(--ds-type-body-2);
+  --openui-text-label-default-heavy: var(--ds-type-subtitle-2);
+  --openui-text-label-lg: var(--ds-type-body-2);
+  --openui-text-label-lg-heavy: var(--ds-type-subtitle-2);
+  --openui-text-heading-xs: var(--ds-type-body-1-strong);
+  --openui-text-heading-sm: var(--ds-type-subtitle-2);
+  --openui-text-heading-md: var(--ds-type-subtitle-1);
+  --openui-text-heading-lg: var(--ds-type-title-2);
+  --openui-text-heading-xl: var(--ds-type-title-1);
+  --openui-text-body-xs-letter-spacing: 0;
+  --openui-text-body-xs-heavy-letter-spacing: 0;
+  --openui-text-body-sm-letter-spacing: 0;
+  --openui-text-body-sm-heavy-letter-spacing: 0;
+  --openui-text-body-default-letter-spacing: 0;
+  --openui-text-body-default-heavy-letter-spacing: 0;
+  --openui-text-body-lg-letter-spacing: 0;
+  --openui-text-body-lg-heavy-letter-spacing: 0;
+  --openui-text-label-xs-letter-spacing: 0;
+  --openui-text-label-xs-heavy-letter-spacing: 0;
+  --openui-text-label-sm-letter-spacing: 0;
+  --openui-text-label-sm-heavy-letter-spacing: 0;
+  --openui-text-label-default-letter-spacing: 0;
+  --openui-text-label-default-heavy-letter-spacing: 0;
+  --openui-text-label-lg-letter-spacing: 0;
+  --openui-text-label-lg-heavy-letter-spacing: 0;
+  --openui-text-heading-xs-letter-spacing: 0;
+  --openui-text-heading-sm-letter-spacing: 0;
+  --openui-text-heading-md-letter-spacing: 0;
+  --openui-text-heading-lg-letter-spacing: 0;
+  --openui-text-heading-xl-letter-spacing: 0;
+}
+
+.ai365-oui {
+  display: block;
+  font-family: inherit;
+  color: var(--openui-text-neutral-primary);
+  overflow-wrap: anywhere;
+}
+
+/* 포커스 = DS(Fluent) 링(입력칸은 아래 2px 브랜드 막대) / focus = the DS (Fluent) ring (inputs use the 2px brand bottom bar) */
+.ai365-oui :is(button, [role="tab"], [role="option"]):focus-visible,
+.ai365-oui-portal :is(button, [role="option"]):focus-visible {
+  outline: none;
+  box-shadow: var(--ds-focus-ring);
+}
+
+/* ============================================================
+   버튼 = 제품 시트 답변 카드 동작(알약 · 그림자 없음), DS 크기 S 24 · M 32 · L 40 · 상태 단계
+   Buttons = the product sheet's answer-card actions (pills, no shadow), DS sizes S 24, M 32, L 40 and state steps
+   ============================================================ */
+.ai365-oui :is(.openui-button-base, .openui-icon-button),
+.ai365-oui-portal :is(.openui-button-base, .openui-icon-button) {
+  border-radius: var(--ds-radius-full);
+  box-shadow: none;
+}
+
+.ai365-oui .openui-button-base,
+.ai365-oui-portal .openui-button-base {
+  min-height: 32px;
+  padding: 5px 12px;
+  gap: 6px;
+  font: var(--ds-type-body-1-strong);
+  letter-spacing: 0;
+}
+
+.ai365-oui :is(.openui-button-base-extra-small, .openui-button-base-small),
+.ai365-oui-portal :is(.openui-button-base-extra-small, .openui-button-base-small) {
+  min-height: 24px;
+  padding: 3px 8px;
+  gap: 4px;
+  font: var(--ds-type-caption-1);
+  border-radius: var(--ds-radius-full);
+}
+
+.ai365-oui .openui-button-base-large,
+.ai365-oui-portal .openui-button-base-large {
+  min-height: 40px;
+  padding: 8px 16px;
+  font: var(--ds-type-subtitle-2);
+}
+
+/* Primary */
+.ai365-oui :is(.openui-button-base-primary, .openui-icon-button-primary),
+.ai365-oui-portal :is(.openui-button-base-primary, .openui-icon-button-primary) {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.ai365-oui :is(.openui-button-base-primary, .openui-icon-button-primary):not(:disabled):hover,
+.ai365-oui-portal :is(.openui-button-base-primary, .openui-icon-button-primary):not(:disabled):hover {
+  background-color: var(--ds-brand-bg-hover);
+}
+
+.ai365-oui :is(.openui-button-base-primary, .openui-icon-button-primary):not(:disabled):active,
+.ai365-oui-portal :is(.openui-button-base-primary, .openui-icon-button-primary):not(:disabled):active {
+  background-color: var(--ds-brand-bg-pressed);
+}
+
+/* Secondary = DS Secondary(흰 바탕 · Stroke 1 → hover · pressed 중립 단계) / Secondary = the DS Secondary */
+.ai365-oui :is(.openui-button-base-secondary, .openui-icon-button-secondary),
+.ai365-oui-portal :is(.openui-button-base-secondary, .openui-icon-button-secondary) {
+  background-color: var(--ds-bg-1);
+  border-color: var(--ds-stroke-1);
+  color: var(--ds-fg-1);
+}
+
+.ai365-oui :is(.openui-button-base-secondary, .openui-icon-button-secondary):not(:disabled):hover,
+.ai365-oui-portal :is(.openui-button-base-secondary, .openui-icon-button-secondary):not(:disabled):hover {
+  background-color: var(--ds-bg-1-hover);
+  border-color: var(--ds-stroke-1-hover);
+}
+
+.ai365-oui :is(.openui-button-base-secondary, .openui-icon-button-secondary):not(:disabled):active,
+.ai365-oui-portal :is(.openui-button-base-secondary, .openui-icon-button-secondary):not(:disabled):active {
+  background-color: var(--ds-bg-1-pressed);
+  border-color: var(--ds-stroke-1-pressed);
+}
+
+/* Tertiary = DS Transparent(바탕 없음, 글자 Foreground 2 → hover 브랜드) / Tertiary = the DS Transparent button */
+.ai365-oui :is(.openui-button-base-tertiary, .openui-icon-button-tertiary),
+.ai365-oui-portal :is(.openui-button-base-tertiary, .openui-icon-button-tertiary) {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--ds-fg-2);
+}
+
+.ai365-oui :is(.openui-button-base-tertiary, .openui-icon-button-tertiary):not(:disabled):hover,
+.ai365-oui-portal :is(.openui-button-base-tertiary, .openui-icon-button-tertiary):not(:disabled):hover {
+  background-color: transparent;
+  color: var(--ds-fg-2-brand-hover);
+}
+
+.ai365-oui :is(.openui-button-base-tertiary, .openui-icon-button-tertiary):not(:disabled):active,
+.ai365-oui-portal :is(.openui-button-base-tertiary, .openui-icon-button-tertiary):not(:disabled):active {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--ds-fg-2-brand-pressed);
+}
+
+/* 비활성 = DS 비활성(Background disabled · Foreground disabled · Stroke disabled) / disabled = the DS disabled colours */
+.ai365-oui :is(.openui-button-base, .openui-icon-button):disabled,
+.ai365-oui-portal :is(.openui-button-base, .openui-icon-button):disabled {
+  background-color: var(--ds-bg-disabled);
+  border-color: var(--ds-stroke-disabled);
+  color: var(--ds-fg-disabled);
+  box-shadow: none;
+}
+
+.ai365-oui :is(.openui-button-base-primary, .openui-button-base-tertiary, .openui-icon-button-primary, .openui-icon-button-tertiary):disabled,
+.ai365-oui-portal :is(.openui-button-base-primary, .openui-button-base-tertiary, .openui-icon-button-primary, .openui-icon-button-tertiary):disabled {
+  border-color: transparent;
+}
+
+.ai365-oui :is(.openui-button-base-tertiary, .openui-icon-button-tertiary):disabled,
+.ai365-oui-portal :is(.openui-button-base-tertiary, .openui-icon-button-tertiary):disabled {
+  background-color: transparent;
+}
+
+/* ============================================================
+   출처 아이콘 / Source icons (src/vendor/sourceIcons.tsx)
+   사내 = 브랜드 문서 + Brand 170 바탕, 로컬 = '로컬' 배지(DS 경고 틴트: Warning background 1 · border 1, 아이콘 Warning foreground 1),
+   데이터 = adapter 데이터 리소스 아이콘의 보라 바탕(#F2E9FE), 그룹웨어 = 그룹웨어 리소스 아이콘의 파랑 바탕(#E6F0FF) — 이 둘은 종류 색이라 그대로.
+   Internal = a brand document on Brand 170; local = the '로컬' badge (the DS warning tint: Warning background 1 and border 1,
+   a Warning foreground 1 icon); data = the purple ground of the adapter's data resource icon (#F2E9FE); groupware = the
+   blue ground of its groupware resource icon (#E6F0FF). The last two are kind colours and stay.
+   ============================================================ */
+.ai365-oui .ai365-oui-doc,
+.ai365-oui-portal .ai365-oui-doc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.ai365-oui .ai365-oui-doc--kn,
+.ai365-oui-portal .ai365-oui-doc--kn {
+  background: var(--ds-brand-170);
+}
+
+.ai365-oui .ai365-oui-doc--local,
+.ai365-oui-portal .ai365-oui-doc--local {
+  background: var(--ds-warning-bg-1);
+}
+
+.ai365-oui .ai365-oui-doc--data,
+.ai365-oui-portal .ai365-oui-doc--data {
+  background: #f2e9fe;
+}
+
+.ai365-oui .ai365-oui-doc--gw,
+.ai365-oui-portal .ai365-oui-doc--gw {
+  background: #e6f0ff;
+}
+
+.ai365-oui .ai365-oui-doc-glyph,
+.ai365-oui-portal .ai365-oui-doc-glyph {
+  display: block;
+  flex-shrink: 0;
+}
+
+/* 로컬 문서 칸의 테두리 = 로컬 배지 테두리(Warning border 1) / a local slot's border = the local badge border (Warning border 1) */
+.ai365-oui .openui-listed-source-item__logo:has(> .ai365-oui-doc--local) {
+  border-color: var(--ds-warning-border-1);
+}
+
+.ai365-oui .openui-listed-source-item__logo {
+  border-radius: var(--ds-radius-4);
+}
+
+/* ============================================================
+   본문 인용 = 번호 칩 / Inline citations = number chips (src/vendor/citationChips.tsx, 2026-10-29)
+   OpenUI 이전 채팅 답의 위첨자 각주(static/adapter.js 의 .ai365-fn)와 같은 값: 10px · 700 · 글자 #4450CE(--primary = Brand 80) ·
+   바탕 #F2F6FF(--primary-soft = Brand 170) · 모서리 4 · 좌우 4 · 왼쪽 2 · 위첨자 · 줄 높이 1.4, hover 바탕 #E4EDFF(--soft-2 = Brand 160).
+   누를 수 있는 칩(role=button)만 손가락 커서 · hover · 키보드 포커스 링이고, 열 곳이 없는 칩(그룹웨어)은 기본 커서다.
+   The values of the superscript footnotes chat answers had before OpenUI (.ai365-fn in static/adapter.js): 10px, 700, text
+   #4450CE (--primary = Brand 80) on #F2F6FF (--primary-soft = Brand 170), radius 4, padding 0 4, margin-left 2, superscript,
+   line height 1.4, hover ground #E4EDFF (--soft-2 = Brand 160). Only clickable chips (role=button) get the pointer, the hover
+   and the keyboard focus ring; a chip with nothing to open (groupware) keeps the default cursor.
+   ============================================================ */
+.ai365-oui .ai365-oui-cite {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ds-brand-80);
+  background: var(--ds-brand-170);
+  border-radius: var(--ds-radius-4);
+  padding: 0 4px;
+  margin-left: 2px;
+  vertical-align: super;
+  line-height: 1.4;
+  cursor: default;
+}
+
+.ai365-oui .ai365-oui-cite[role="button"] {
+  cursor: pointer;
+}
+
+.ai365-oui .ai365-oui-cite[role="button"]:hover {
+  background: var(--ds-brand-160);
+}
+
+.ai365-oui .ai365-oui-cite[role="button"]:focus-visible {
+  outline: none;
+  box-shadow: var(--ds-focus-ring);
+}
+
+/* ============================================================
+   출처 띠 · 관련 질문 / Sources strip and follow-ups
+   머리 = DS 구획 머리(Caption 1 Strong · Foreground 3), 출처 카드 = 작은 DS Outline 카드(r8 · 1px Stroke 2 → hover Background 1 hover + Stroke 1 hover),
+   관련 질문 = 줄(구분선 Stroke 2, hover = 글자 브랜드).
+   Headers = DS section headers (Caption 1 Strong, Foreground 3); source cards = small DS Outline cards (r8, a 1px Stroke 2 →
+   Background 1 hover and Stroke 1 hover); follow-ups = rows (Stroke 2 rules; brand text on hover).
+   ============================================================ */
+.ai365-oui :is(.openui-listed-sources-header__title, .openui-follow-up-block__header) {
+  font: var(--ds-type-caption-1-strong);
+  color: var(--ds-fg-3);
+  letter-spacing: 0;
+}
+
+.ai365-oui .openui-listed-sources-item-container {
+  border-radius: var(--ds-radius-card) !important;
+  border: 1px solid var(--ds-stroke-2) !important;
+}
+
+.ai365-oui .openui-listed-sources-item-container--has-url:hover {
+  background-color: var(--ds-bg-1-hover) !important;
+  border-color: var(--ds-stroke-1-hover) !important;
+}
+
+.ai365-oui .openui-listed-source-item__source-name {
+  font: var(--ds-type-caption-1-strong);
+  color: var(--ds-fg-1);
+}
+
+.ai365-oui .openui-listed-source-item__title {
+  font: var(--ds-type-caption-1);
+  color: var(--ds-fg-3);
+}
+
+.ai365-oui .openui-follow-up-block__header {
+  border-bottom-color: var(--ds-stroke-2);
+}
+
+.ai365-oui .openui-follow-up-item {
+  font: var(--ds-type-body-1);
+  color: var(--ds-fg-1);
+  border-bottom: 1px solid var(--ds-stroke-2);
+  border-radius: 0;
+  transition: color 0.12s;
+}
+
+.ai365-oui .openui-follow-up-item:hover,
+.ai365-oui .openui-follow-up-item:hover .openui-follow-up-item-text {
+  color: var(--ds-fg-2-brand-hover);
+}
+
+.ai365-oui .openui-follow-up-item:active .openui-follow-up-item-text {
+  color: var(--ds-fg-2-brand-pressed);
+}
+
+/* ============================================================
+   태그 = DS Badge(r4 · 틴트: 중립 = informative, 정보 = brand, 성공 · 경고 · 위험 = 상태 틴트), 크기 sm = L 24 · md · lg = XL 32(Caption 1 Strong)
+   Tags = DS Badges (r4, tint: neutral = informative, info = brand, success, warning, danger = status tints); sizes sm = L 24, md and lg = XL 32 (Caption 1 Strong)
+   ============================================================ */
+.ai365-oui .openui-tag {
+  border: 1px solid transparent;
+  border-radius: var(--ds-radius-badge);
+}
+
+.ai365-oui .openui-tag-sm {
+  height: 24px;
+  padding: 0 8px;
+  border-radius: var(--ds-radius-badge);
+  font: var(--ds-type-caption-1-strong);
+}
+
+.ai365-oui :is(.openui-tag-md, .openui-tag-lg) {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--ds-radius-badge);
+  font: var(--ds-type-caption-1-strong);
+}
+
+.ai365-oui .openui-tag-neutral {
+  background-color: var(--ds-bg-4);
+  border-color: var(--ds-stroke-2);
+  color: var(--ds-fg-3);
+}
+
+.ai365-oui .openui-tag-info {
+  background-color: var(--ds-brand-bg-2);
+  border-color: var(--ds-brand-stroke-2);
+  color: var(--ds-fg-brand-2);
+}
+
+.ai365-oui .openui-tag-success {
+  background-color: var(--ds-success-bg-1);
+  border-color: var(--ds-success-border-1);
+  color: var(--ds-success-fg-1);
+}
+
+.ai365-oui .openui-tag-warning {
+  background-color: var(--ds-warning-bg-1);
+  border-color: var(--ds-warning-border-1);
+  color: var(--ds-warning-fg-2);
+}
+
+.ai365-oui .openui-tag-danger {
+  background-color: var(--ds-danger-bg-1);
+  border-color: var(--ds-danger-border-1);
+  color: var(--ds-danger-fg-1);
+}
+
+/* 표 칸 · 태그 묶음 안의 배지는 글자 폭만큼 / badges in table cells and tag blocks are as wide as their text */
+.ai365-oui :is(.openui-table-cell, .openui-tag-block) .openui-tag {
+  display: inline-flex;
+  width: fit-content;
+}
+
+/* ============================================================
+   Callout = DS 메시지 바 색 · 모양(r8 · 1px 선 · 상태 아이콘, 정보 = 회색, 글자 Foreground 1). 답 본문 안이라 글자는 읽기 좋게 Body 1
+   (제목 Body 1 Strong), 안쪽 마크다운도 같은 크기를 따른다(굵게는 그대로).
+   Callouts = the DS message-bar colours and shape (r8, a 1px stroke, a status icon; info = grey; Foreground 1 text). Inside an
+   answer body the text stays readable at Body 1 (title Body 1 Strong), and the markdown inside follows the same size (bold kept).
+   ============================================================ */
+.ai365-oui :is(.openui-callout, .openui-text-callout) {
+  border: 1px solid var(--ds-info-border);
+  border-radius: var(--ds-radius-message-bar);
+  background: var(--ds-info-bg) no-repeat 12px 10px / 16px 16px;
+  color: var(--ds-fg-1);
+}
+
+.ai365-oui .openui-callout {
+  padding: 8px 12px 8px 36px;
+  gap: 2px;
+}
+
+.ai365-oui .openui-text-callout {
+  padding: 8px 12px;
+}
+
+.ai365-oui :is(.openui-callout-title, .openui-text-callout-content-title) {
+  font: var(--ds-type-body-1-strong);
+  color: var(--ds-fg-1) !important;
+}
+
+.ai365-oui :is(.openui-callout-description, .openui-text-callout-content-description) {
+  font: var(--ds-type-body-1);
+  color: var(--ds-fg-1);
+}
+
+.ai365-oui :is(.openui-callout-description, .openui-text-callout-content-description) :is(.openui-markdown-renderer, p, strong, em, span, a, code) {
+  font-size: inherit;
+  line-height: inherit;
+}
+
+/* 정보 · 중립 = 회색 정보 아이콘 / info and neutral = the grey info icon */
+.ai365-oui .openui-callout:is(.openui-callout-info, .openui-callout-neutral) {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='10' r='8' fill='%235D616A'/%3E%3Cpath d='M10 9v5' stroke='white' stroke-width='1.6' stroke-linecap='round'/%3E%3Ccircle cx='10' cy='6.4' r='1' fill='white'/%3E%3C/svg%3E");
+}
+
+.ai365-oui :is(.openui-callout-success, .openui-text-callout-success) {
+  background-color: var(--ds-success-bg-1);
+  border-color: var(--ds-success-border-1);
+}
+
+.ai365-oui .openui-callout-success {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='10' r='8' fill='%230E700E'/%3E%3Cpath d='m6.6 10.2 2.3 2.3 4.5-4.7' stroke='white' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.ai365-oui :is(.openui-callout-warning, .openui-text-callout-warning) {
+  background-color: var(--ds-warning-bg-1);
+  border-color: var(--ds-warning-border-1);
+}
+
+.ai365-oui .openui-callout-warning {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M10 2.5 1.8 17h16.4z' fill='%23BC4B09'/%3E%3Cpath d='M10 8v4.2' stroke='white' stroke-width='1.6' stroke-linecap='round'/%3E%3Ccircle cx='10' cy='14.6' r='1' fill='white'/%3E%3C/svg%3E");
+}
+
+.ai365-oui :is(.openui-callout-danger, .openui-text-callout-danger) {
+  background-color: var(--ds-danger-bg-1);
+  border-color: var(--ds-danger-border-1);
+}
+
+.ai365-oui .openui-callout-danger {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='10' r='8' fill='%23C50F1F'/%3E%3Cpath d='m7.2 7.2 5.6 5.6M12.8 7.2l-5.6 5.6' stroke='white' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+.ai365-oui .openui-text-callout-icon,
+.ai365-oui .openui-text-callout-icon-inner {
+  color: var(--ds-info-fg);
+}
+
+.ai365-oui .openui-text-callout-success :is(.openui-text-callout-icon, .openui-text-callout-icon-inner) {
+  color: var(--ds-success-fg-1);
+}
+
+.ai365-oui .openui-text-callout-warning :is(.openui-text-callout-icon, .openui-text-callout-icon-inner) {
+  color: var(--ds-warning-fg-1);
+}
+
+.ai365-oui .openui-text-callout-danger :is(.openui-text-callout-icon, .openui-text-callout-icon-inner) {
+  color: var(--ds-danger-fg-1);
+}
+
+/* ============================================================
+   표 = DS DataGrid(바깥 선 · 모서리 · 줄무늬 · 머리 채움 없음, 머리 Body 1 · Foreground 1, 행 구분선 Stroke 2, 셀 좌우 8 · 행 45)
+   Tables = a DS DataGrid (no outer stroke, radius, stripes or header fill; Body 1 Foreground 1 headers; Stroke 2 row rules; 8px cells, 45px rows)
+   ============================================================ */
+.ai365-oui .openui-table-container {
+  border: 0;
+  border-radius: 0;
+}
+
+.ai365-oui .openui-table {
+  font: var(--ds-type-body-1);
+  letter-spacing: 0;
+}
+
+.ai365-oui :is(.openui-table-cell, .openui-table-head) {
+  padding: 12px 8px;
+  color: var(--ds-fg-1);
+}
+
+.ai365-oui .openui-table-head .openui-table-head-label {
+  font: var(--ds-type-body-1);
+  color: var(--ds-fg-1);
+  letter-spacing: 0;
+}
+
+.ai365-oui .openui-table-head .openui-table-head-icon {
+  color: var(--ds-fg-3);
+}
+
+.ai365-oui .openui-table-row:nth-child(even) {
+  background-color: transparent;
+}
+
+.ai365-oui .openui-table-row:hover {
+  background-color: var(--ds-bg-1-hover);
+}
+
+/* 표 "number" 열(오른쪽 정렬, build/vendorPatches.ts)은 자리 맞춤 숫자 / "number" columns (right aligned) use tabular figures */
+.ai365-oui .openui-table-cell.openui-table-align-right {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   입력 · 여러 줄 · 셀렉트 = DS Outline 입력(흰 바탕 · 옆선 Stroke 1 · 아래선 Stroke accessible · r8 · M 32, 포커스 = 아래 2px 브랜드,
+   오류 = 1px Danger border 2, 비활성 = 투명 + Stroke disabled), 목록 = DS 목록(r8 · 안쪽 4 · Shadow 16, 항목 32 · r6)
+   Inputs, textareas and selects = DS Outline inputs (white, Stroke 1 sides, a Stroke accessible bottom, r8, M 32; focus = a 2px
+   brand bottom bar; error = a 1px Danger border 2; disabled = transparent with Stroke disabled); lists = the DS listbox
+   ============================================================ */
+.ai365-oui :is(.openui-input, .openui-textarea, .openui-select-trigger) {
+  background-color: var(--ds-bg-1);
+  border: 1px solid var(--ds-stroke-1);
+  border-bottom-color: var(--ds-stroke-accessible);
+  border-radius: var(--ds-radius-input);
+  color: var(--ds-fg-1);
+  font: var(--ds-type-body-1);
+  letter-spacing: 0;
+  box-shadow: none;
+}
+
+.ai365-oui :is(.openui-input, .openui-select-trigger) {
+  min-height: 32px;
+  padding: 5px 10px;
+}
+
+.ai365-oui :is(.openui-input-small, .openui-select-trigger-sm) {
+  min-height: 24px;
+  padding: 3px 6px;
+  font: var(--ds-type-caption-1);
+}
+
+.ai365-oui :is(.openui-input-large, .openui-select-trigger-lg) {
+  min-height: 40px;
+  padding: 9px 12px;
+  font: var(--ds-type-body-2);
+}
+
+.ai365-oui .openui-textarea {
+  min-height: 52px;
+  padding: 6px 12px;
+}
+
+.ai365-oui :is(.openui-input, .openui-textarea)::placeholder {
+  color: var(--ds-fg-4);
+}
+
+.ai365-oui .openui-select-trigger[data-placeholder] {
+  color: var(--ds-fg-4);
+}
+
+.ai365-oui .openui-select-trigger svg {
+  color: var(--ds-fg-3);
+}
+
+.ai365-oui :is(.openui-input, .openui-textarea, .openui-select-trigger):not(:focus):not(:disabled):not(.openui-input-error):hover {
+  background-color: var(--ds-bg-1);
+  border-color: var(--ds-stroke-1-hover);
+  border-bottom-color: var(--ds-stroke-accessible-hover);
+}
+
+.ai365-oui .openui-select-trigger:hover:not([data-placeholder]) {
+  color: var(--ds-fg-1);
+}
+
+.ai365-oui :is(.openui-input, .openui-textarea):focus,
+.ai365-oui :is(.openui-input, .openui-textarea):not(.openui-input-error):not(.openui-textarea-error):focus,
+.ai365-oui .openui-select-trigger[data-state="open"],
+.ai365-oui .openui-select-trigger:focus-visible {
+  outline: none;
+  background-color: var(--ds-bg-1);
+  border-color: var(--ds-stroke-1);
+  border-bottom-color: var(--ds-compound-brand);
+  box-shadow: inset 0 -1px 0 var(--ds-compound-brand);
+}
+
+.ai365-oui :is(.openui-input-error, .openui-textarea-error),
+.ai365-oui :is(.openui-input-error, .openui-textarea-error):focus {
+  border-color: var(--ds-danger-border-2);
+  box-shadow: none;
+}
+
+.ai365-oui :is(.openui-input, .openui-textarea, .openui-select-trigger):disabled {
+  background-color: transparent;
+  border-color: var(--ds-stroke-disabled);
+  color: var(--ds-fg-disabled);
+}
+
+/* 필드 = DS Field(라벨 Body 1 · Foreground 1, 필수 * Danger foreground 1, 안내 · 오류 Caption 1) / fields = DS Field */
+.ai365-oui .openui-form-control {
+  gap: 2px;
+}
+
+.ai365-oui .openui-label {
+  font: var(--ds-type-body-1);
+  color: var(--ds-fg-1);
+}
+
+.ai365-oui .openui-label-required-asterisk {
+  color: var(--ds-danger-fg-1);
+}
+
+.ai365-oui .openui-hint {
+  margin-top: 2px;
+  font: var(--ds-type-caption-1);
+  color: var(--ds-fg-3);
+}
+
+.ai365-oui .openui-hint-error {
+  color: var(--ds-danger-fg-1);
+}
+
+/* 셀렉트 목록(포털) / the select list (portal) */
+.ai365-oui-portal.openui-select-content,
+.ai365-oui .openui-select-content {
+  border-radius: var(--ds-radius-listbox);
+  background-color: var(--ds-bg-1);
+  box-shadow: var(--ds-shadow-16);
+}
+
+.ai365-oui-portal.openui-select-content > :first-child:first-child,
+.ai365-oui-portal.openui-select-content > :last-child:last-child {
+  border-radius: var(--ds-radius-listbox);
+}
+
+.ai365-oui-portal .openui-select-viewport {
+  padding: 4px;
+}
+
+.ai365-oui-portal .openui-select-item {
+  min-height: 32px;
+  padding: 6px 28px 6px 8px;
+  border-radius: var(--ds-radius-menu-item);
+  font: var(--ds-type-body-1);
+  color: var(--ds-fg-2);
+}
+
+.ai365-oui-portal :is(.openui-select-item-text, .openui-select-item-text-value) {
+  font: var(--ds-type-body-1);
+  color: inherit;
+}
+
+.ai365-oui-portal .openui-select-item:not([data-state="checked"]):hover,
+.ai365-oui-portal .openui-select-item:focus,
+.ai365-oui-portal .openui-select-item[data-highlighted] {
+  background-color: var(--ds-subtle-bg-hover);
+  color: var(--ds-fg-1);
+}
+
+.ai365-oui-portal .openui-select-item[data-state="checked"] {
+  background-color: var(--ds-subtle-bg-selected);
+  color: var(--ds-fg-1);
+}
+
+.ai365-oui-portal .openui-select-label {
+  font: var(--ds-type-caption-1-strong);
+  color: var(--ds-fg-3);
+}
+
+/* 체크박스 · 라디오 · 스위치 = DS(체크박스 16 · r2 · Stroke accessible, 켜짐 브랜드 / 스위치 트랙 = 꺼짐 투명 + 1px Stroke accessible)
+   checkboxes, radios and switches = the DS (checkbox 16, r2, Stroke accessible, brand when on; switch track off = transparent with a 1px Stroke accessible) */
+.ai365-oui .openui-checkbox-item-root {
+  border-radius: var(--ds-radius-checkbox);
+  border-color: var(--ds-stroke-accessible);
+}
+
+.ai365-oui .openui-checkbox-item-root[data-state="checked"] {
+  border-color: var(--ds-compound-brand);
+}
+
+.ai365-oui .openui-radio-item-root[data-state="unchecked"] .openui-radio-item-svg-border {
+  stroke: var(--ds-stroke-accessible);
+}
+
+.ai365-oui .openui-switch-item-root {
+  border-color: var(--ds-stroke-accessible);
+}
+
+.ai365-oui .openui-switch-item-root:not([data-state="checked"]) .openui-switch-item-thumb {
+  background-color: var(--ds-stroke-accessible);
+}
+
+.ai365-oui :is(.openui-checkbox-item-label, .openui-radio-item-label, .openui-switch-item-label) {
+  font: var(--ds-type-body-1);
+}
+
+.ai365-oui :is(.openui-checkbox-item-description, .openui-radio-item-description, .openui-switch-item-description) {
+  font: var(--ds-type-caption-1);
+  color: var(--ds-fg-3);
+}
+
+/* ============================================================
+   탭 = DS 밑줄 탭(M 44, 선택 = 3px 둥근 브랜드 막대 + Foreground 1 semibold, 비선택 Foreground 2)
+   Tabs = DS underline tabs (M 44; selected = a 3px rounded brand bar and Foreground 1 semibold; unselected Foreground 2)
+   ============================================================ */
+.ai365-oui .openui-tabs-clear .openui-tabs-list {
+  gap: 24px;
+}
+
+.ai365-oui .openui-tabs-clear .openui-tabs-trigger {
+  padding: 12px 0;
+  font: var(--ds-type-body-1);
+  color: var(--ds-fg-2);
+}
+
+.ai365-oui .openui-tabs-clear .openui-tabs-trigger[data-state="active"] {
+  font: var(--ds-type-body-1-strong);
+  color: var(--ds-fg-1);
+}
+
+.ai365-oui .openui-tabs-clear .openui-tabs-trigger:not([data-state="active"]):hover {
+  color: var(--ds-fg-2-hover);
+}
+
+.ai365-oui .openui-tabs-indicator {
+  height: 3px;
+  border-radius: var(--ds-radius-full);
+  background-color: var(--ds-compound-brand);
+}
+
+.ai365-oui .openui-tabs-list-container::after {
+  border-bottom-color: var(--ds-stroke-2);
+}
+
+/* ============================================================
+   단계 · 목록 · 아코디언 · 카드 / Steps, lists, accordions and cards
+   ============================================================ */
+.ai365-oui .openui-step-number-inner {
+  background-color: var(--ds-bg-1);
+  border-color: var(--ds-stroke-1);
+  color: var(--ds-fg-2);
+  font: var(--ds-type-caption-1-strong);
+}
+
+.ai365-oui .openui-connector-line {
+  background-color: var(--ds-stroke-2);
+}
+
+.ai365-oui .openui-step-title {
+  font: var(--ds-type-body-1-strong);
+  color: var(--ds-fg-1);
+}
+
+.ai365-oui .openui-step-details {
+  font: var(--ds-type-body-1);
+  color: var(--ds-fg-2);
+}
+
+.ai365-oui .openui-list-item-indicator {
+  background-color: var(--ds-bg-3);
+  border-radius: var(--ds-radius-8);
+  color: var(--ds-fg-3);
+}
+
+.ai365-oui .openui-list-item-indicator-no-subtitle {
+  border-radius: var(--ds-radius-4);
+}
+
+.ai365-oui .openui-list-item:hover .openui-list-item-indicator-clickable {
+  background-color: var(--ds-bg-3-hover);
+}
+
+.ai365-oui .openui-list-item-subtitle {
+  font: var(--ds-type-body-1);
+  color: var(--ds-fg-3);
+}
+
+.ai365-oui .openui-accordion {
+  border-radius: var(--ds-radius-card);
+}
+
+/* 카드(sunk) = 제품 시트 카드(r16 · Background 2 · 1px Stroke 2, 그림자 없음) / the sunk card = the product-sheet card (r16, Background 2, a 1px Stroke 2, no shadow) */
+.ai365-oui .openui-card-sunk {
+  border-radius: var(--ds-radius-product-card);
+  background-color: var(--ds-bg-2);
+  border-color: var(--ds-stroke-2);
+  box-shadow: none;
+}
+
+.ai365-oui .openui-header-bottom {
+  font: var(--ds-type-body-1);
+  color: var(--ds-fg-3);
+}
+
+/* ============================================================
+   호스트 규칙 막이 / Guard against host rules
+   목업의 .ai-body 표 · 목록 규칙(테두리 · 줄무늬 · 여백)이 섬의 OpenUI 표에 새어 들지 않게.
+   The mockup's .ai-body table and list rules (borders, stripes, margins) must not leak into the island's tables.
+   ============================================================ */
+.ai365-oui div table {
+  width: 100%;
+  margin: 0;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.ai365-oui table tr th,
+.ai365-oui table tr td {
+  border: 0;
+  text-align: inherit;
+  vertical-align: middle;
+}
+
+.ai365-oui table thead th {
+  background: transparent;
+  font-weight: inherit;
+}
+
+.ai365-oui.ai365-oui table tbody tr:nth-child(even) td {
+  background: transparent;
+}
+
+.ai365-oui ul li,
+.ai365-oui ol li {
+  color: inherit;
+}
+
+/* ============================================================
+   마크다운 대체 · 디버그 / Markdown fallback and debug
+   ============================================================ */
+.ai365-oui .ai365-oui-errors {
+  margin-top: 6px;
+  font: var(--ds-type-caption-1);
+  color: var(--openui-text-neutral-secondary);
+}
+
+.ai365-oui .ai365-oui-errors pre {
+  white-space: pre-wrap;
+  font-size: 12px;
+}
+
+/* ============================================================
+   Mermaid
+   ============================================================ */
+.ai365-oui .mermaid-diagram {
+  margin: 8px 0;
+}
+
+.ai365-oui .mermaid-title {
+  font: var(--ds-type-body-1-strong);
+  margin-bottom: 6px;
+}
+
+.ai365-oui .mermaid-svg {
+  overflow-x: auto;
+  text-align: center;
+}
+
+.ai365-oui .mermaid-svg svg {
+  display: inline-block;
+  max-width: 100%;
+  height: auto;
+}
+
+.ai365-oui .mermaid-note {
+  margin: 6px 0 0;
+  font: var(--ds-type-caption-1);
+  color: var(--openui-text-neutral-secondary);
+}
+
+/* ============================================================
+   장소 · 일정 / Places and schedules (사진 없음 / no photos)
+   ============================================================ */
+.ai365-oui .place-list {
+  display: flex;
+  flex-direction: column;
+  margin: 8px 0;
+}
+
+.ai365-oui .place-card {
+  display: flex;
+  gap: 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--openui-border-default);
+}
+
+.ai365-oui .place-card:first-child {
+  border-top: 0;
+}
+
+.ai365-oui .place-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.ai365-oui .place-name {
+  font: var(--ds-type-subtitle-2);
+}
+
+.ai365-oui .place-name a,
+.ai365-oui .itinerary-stop-title a {
+  color: inherit;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.ai365-oui .place-detail {
+  font: var(--ds-type-caption-1);
+}
+
+.ai365-oui .place-detail-label {
+  color: var(--openui-text-neutral-secondary);
+}
+
+.ai365-oui .place-description,
+.ai365-oui .itinerary-stop-description {
+  width: 100%;
+  font: var(--ds-type-body-1);
+}
+
+.ai365-oui .itinerary-day {
+  margin: 16px 0 8px;
+}
+
+.ai365-oui .itinerary-day-title {
+  margin: 0 0 6px;
+  font: var(--ds-type-subtitle-2);
+}
+
+.ai365-oui .itinerary-day-theme {
+  margin: 0 0 4px;
+  font: var(--ds-type-caption-1);
+  color: var(--openui-text-neutral-secondary);
+}
+
+.ai365-oui .itinerary-stop {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--openui-border-default);
+}
+
+.ai365-oui .itinerary-stop:first-child {
+  border-top: 0;
+}
+
+.ai365-oui .itinerary-stop-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ai365-oui .itinerary-stop-title {
+  font: var(--ds-type-body-1-strong);
+  margin-bottom: 4px;
+}
+
+.ai365-oui .itinerary-stop-time {
+  color: var(--openui-text-neutral-secondary);
+  font-weight: 400;
+}
+
+/* ============================================================
+   대시보드 / Dashboards
+   Stat 줄 · 패널 = DS Card(흰 바탕 · r8 · Shadow 04, 칸 구분선 Stroke 2), 숫자 = Subtitle 1, 설명 = Caption 1 · Foreground 3, 증감 = DS 상태 글자
+   The stat strip and panels = DS Cards (white, r8, Shadow 04; Stroke 2 dividers); values = Subtitle 1; labels = Caption 1
+   Foreground 3; changes = DS status text
+   ============================================================ */
+.ai365-oui .stat-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  border: 0;
+  border-radius: var(--ds-radius-card);
+  background: var(--ds-bg-1);
+  box-shadow: var(--ds-shadow-4);
+  overflow: hidden;
+}
+
+.ai365-oui .stat {
+  padding: 12px 16px;
+  border-left: 1px solid var(--openui-border-default);
+  margin-left: -1px;
+  min-width: 0;
+}
+
+.ai365-oui .stat-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai365-oui .stat-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+/* Stat 꼬리표 = DS Badge M 20 · r4 informative 틴트 / the stat tag = a DS Badge M 20, r4, informative tint */
+.ai365-oui .stat-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  margin-top: 8px;
+  padding: 0 6px;
+  border-radius: var(--ds-radius-badge);
+  background: var(--ds-bg-4);
+  box-shadow: inset 0 0 0 1px var(--ds-stroke-2);
+  color: var(--ds-fg-3);
+  font: var(--ds-type-caption-2-strong);
+}
+
+.ai365-oui .stat-value {
+  font: var(--ds-type-subtitle-1);
+  color: var(--ds-fg-1);
+}
+
+.ai365-oui .stat-label {
+  margin-top: 2px;
+  color: var(--openui-text-neutral-secondary);
+  font: var(--ds-type-caption-1);
+}
+
+.ai365-oui .stat-change {
+  margin-top: 4px;
+  font: var(--ds-type-caption-1-strong);
+}
+
+.ai365-oui .stat-change.good {
+  color: var(--openui-text-success-primary);
+}
+
+.ai365-oui .stat-change.bad {
+  color: var(--openui-text-danger-primary);
+}
+
+.ai365-oui .stat-change.neutral {
+  color: var(--openui-text-neutral-secondary);
+}
+
+/* 패널을 나란히, 답 폭이 640px 보다 좁으면 한 줄 / panels side by side; one column below 640px */
+.ai365-oui .dash-columns-frame {
+  container-type: inline-size;
+}
+
+.ai365-oui .dash-columns {
+  display: grid;
+  gap: 12px;
+}
+
+@container (max-width: 640px) {
+  .ai365-oui .dash-columns {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.ai365-oui .dash-panel {
+  min-width: 0;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: var(--ds-radius-card);
+  background: var(--ds-bg-1);
+  box-shadow: var(--ds-shadow-4);
+}
+
+.ai365-oui .dash-panel-title {
+  margin: 0;
+  font: var(--ds-type-body-1-strong);
+  color: var(--ds-fg-1);
+}
+
+.ai365-oui .dash-panel-subtitle {
+  margin: 2px 0 0;
+  color: var(--openui-text-neutral-secondary);
+  font: var(--ds-type-caption-1);
+}
+
+.ai365-oui .dash-panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.ai365-oui .funnel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ai365-oui .funnel-row {
+  display: grid;
+  grid-template-columns: minmax(70px, 30%) 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.ai365-oui .funnel-label {
+  font: var(--ds-type-caption-1);
+  color: var(--openui-text-neutral-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai365-oui .funnel-track {
+  display: flex;
+  justify-content: center;
+}
+
+/* 깔때기 · 진행 막대 = 데이터 막대(브랜드) / funnel and progress bars = data bars (brand) */
+.ai365-oui .funnel-bar {
+  display: block;
+  height: 24px;
+  border-radius: var(--ds-radius-6);
+  background: var(--openui-interactive-accent-default);
+}
+
+.ai365-oui .funnel-value {
+  font: var(--ds-type-caption-1-strong);
+  text-align: right;
+}
+
+.ai365-oui .funnel-drop {
+  text-align: center;
+  font: var(--ds-type-caption-1);
+  color: var(--openui-text-neutral-secondary);
+  padding: 2px 0;
+}
+
+.ai365-oui .progress-cell {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 90px;
+}
+
+.ai365-oui .progress-cell-track {
+  display: block;
+  height: 4px;
+  border-radius: var(--ds-radius-full);
+  background: var(--ds-bg-5);
+  overflow: hidden;
+}
+
+.ai365-oui .progress-cell-bar {
+  display: block;
+  height: 100%;
+  border-radius: var(--ds-radius-full);
+  background: var(--openui-interactive-accent-default);
+}
+
+/* ============================================================
+   화면 도구 / Tools that work in the page
+   ============================================================ */
+.ai365-oui .readout {
+  padding: 16px;
+  border: 0;
+  border-radius: var(--ds-radius-card);
+  background: var(--ds-bg-3);
+  text-align: right;
+}
+
+.ai365-oui .readout-caption {
+  color: var(--openui-text-neutral-secondary);
+  font: var(--ds-type-caption-1);
+}
+
+.ai365-oui .readout-value {
+  margin-top: 4px;
+  font: var(--ds-type-title-1);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.ai365-oui .button-grid {
+  display: grid;
+  gap: 8px;
+}
+
+/* 키 하나가 칸을 채운다 / each key fills its cell */
+.ai365-oui .button-grid > *,
+.ai365-oui .button-grid button {
+  width: 100%;
+  min-width: 0;
+}
+
+.ai365-oui .button-grid button {
+  justify-content: center;
+  min-height: 40px;
+}
+
+.ai365-oui .tool-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ai365-oui .tool-field-label {
+  font: var(--ds-type-body-1);
+  color: var(--ds-fg-1);
+}
+
+.ai365-oui .tool-field-hint {
+  margin-top: 2px;
+  color: var(--openui-text-neutral-secondary);
+  font: var(--ds-type-caption-1);
+}

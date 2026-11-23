@@ -1,0 +1,40 @@
+# 비밀/자격증명
+.env
+
+# 루트 테스트/스크래치 스크립트 (저장소 제외 — 로컬엔 유지)
+/test.py
+/test_access.py
+/test_desc.py
+/test_effective.py
+/check.py
+
+# 데이터베이스
+*.duckdb
+*.duckdb.wal
+*.sqlite3
+*.db
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# 생성 캐시
+static/bi_thumbs/
+data/generated/
+
+# OS/에디터
+.DS_Store
+Thumbs.db
+
+# Node 의존성 (OpenUI 섬 번들 frontend/openui — 빌드 결과는 static/openui 에 커밋) / Node deps (OpenUI island; the build output in static/openui is committed)
+node_modules/
+
+# Local configuration and generated demo data
+.env.*
+outputs/
+.claude/
+data/csv/
+data/knowledge/
+data/bi/

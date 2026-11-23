@@ -1,0 +1,19 @@
+fastapi
+uvicorn
+python-dotenv
+google-genai
+pymupdf
+duckdb
+sqlglot==30.18.0
+rank-bm25
+numpy
+sse-starlette
+python-multipart
+python-pptx
+python-docx
+openpyxl
+imageio
+imageio-ffmpeg
+pywin32>=306; sys_platform == "win32"
+httpx>=0.27
+yfinance
